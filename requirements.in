@@ -1,0 +1,5 @@
+fastapi
+slackers
+uvicorn
+slackclient
+slackclient[optional]

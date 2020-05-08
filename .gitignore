@@ -1,0 +1,11 @@
+.idea
+*.iml
+out
+gen
+venv
+__pycache__
+.pytest_cache
+.mypy_cache
+.DS_Store
+tunnel.sh
+.env

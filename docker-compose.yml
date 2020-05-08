@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  metabot:
+    container_name: metabot
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    restart: unless-stopped
+    volumes:
+      - './metabot:/metabot/metabot'
+    ports:
+      - 8000:8000
+    env_file: .env

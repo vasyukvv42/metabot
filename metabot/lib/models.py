@@ -1,18 +1,55 @@
 from typing import List, Optional, Dict
 
-from pydantic import BaseModel, AnyHttpUrl
+from pydantic import BaseModel, AnyHttpUrl, validator, Field
+
+SAMPLE_MODULE = {
+    'name': 'help',
+    'description': 'Help module',
+    'url': 'http://help-module:8000/api',
+    'commands': {
+        '': {
+            'name': '',
+            'description': 'Get help',
+            'arguments': [
+                {
+                    'name': 'module',
+                    'is_optional': True,
+                    'description': 'Module name'
+                },
+                {
+                    'name': 'command',
+                    'is_optional': True,
+                    'description': 'Command name'
+                },
+            ]
+        }
+    }
+}
 
 
 class CommandArgument(BaseModel):
     name: str
-    optional: bool = False
+    is_optional: bool = False
     description: Optional[str]
 
 
 class Command(BaseModel):
     name: str
     description: Optional[str]
-    arguments: List[CommandArgument]
+    arguments: List[CommandArgument] = Field(default_factory=list)
+
+    # noinspection PyMethodParameters
+    @validator('arguments')
+    def no_required_args_after_optional(
+            cls, v: List[CommandArgument]
+    ) -> List[CommandArgument]:
+        has_optional = False
+        for arg in v:
+            if has_optional and not arg.is_optional:
+                raise ValueError('Required argument follows optional argument')
+
+            has_optional = has_optional or arg.is_optional
+        return v
 
 
 class Module(BaseModel):
@@ -21,3 +58,15 @@ class Module(BaseModel):
     url: AnyHttpUrl
 
     commands: Dict[str, Command]
+
+    # noinspection PyMethodParameters
+    @validator('commands')
+    def command_names_match(cls, v: Dict[str, Command]) -> Dict[str, Command]:
+        if not all(key == command.name for key, command in v.items()):
+            raise ValueError('Keys and command names must match')
+        return v
+
+    class Config:
+        schema_extra = {
+            'example': SAMPLE_MODULE
+        }

@@ -21,5 +21,9 @@ def get_module(module_name: str) -> Optional[Module]:
     return MODULES.get(module_name)
 
 
+def get_all_modules() -> Dict[str, Module]:
+    return MODULES
+
+
 def get_module_names() -> List[str]:
     return list(MODULES.keys())

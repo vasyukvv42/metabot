@@ -10,5 +10,5 @@ app = FastAPI(title=APP_TITLE)
 app.add_event_handler('startup', start_app_handler(app))
 app.add_event_handler('shutdown', stop_app_handler(app))
 
-app.include_router(slackers_router, prefix=SLACKERS_PREFIX)
-app.include_router(api_router, prefix=API_PREFIX)
+app.include_router(slackers_router, prefix=SLACKERS_PREFIX, tags=['slack'])
+app.include_router(api_router, prefix=API_PREFIX, tags=['api'])

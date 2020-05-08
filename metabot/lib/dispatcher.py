@@ -20,7 +20,7 @@ class CommandDispatcher:
     def __init__(self, app: FastAPI, command: str = '/meta') -> None:
         self.session = app.state.session
         self.slack = app.state.slack
-        self.command = command if command.startswith('/') else f'/{command}'
+        self.command = command
 
     async def dispatch(self, payload: Dict[str, str]) -> None:
         parsed_text = split(payload['text'])
@@ -53,7 +53,7 @@ class CommandDispatcher:
                 f'Available commands: {self._format_strings(module.commands)}'
             )
 
-        required_arguments = [x for x in command.arguments if not x.optional]
+        required_arguments = [x for x in command.arguments if not x.is_optional]
         if len(arguments) < len(required_arguments):
             arg_names = (arg.name for arg in required_arguments)
             return await self._error(
@@ -63,8 +63,8 @@ class CommandDispatcher:
             )
 
         try:
-            await self._trigger_command(module, command, arguments)
-        except ClientResponseError as e:
+            await self._trigger_command(module, command, arguments, payload)
+        except ClientResponseError:
             log.exception('Module request failed')
         except ClientError:
             log.exception('Module request failed')
@@ -78,14 +78,16 @@ class CommandDispatcher:
             self,
             module: Module,
             command: Command,
-            arguments: List[str]
+            arguments: List[str],
+            metadata: Dict[str, str],
     ) -> None:
         payload = {
             'command': command.name,
             'arguments': {
                 arg.name: value
                 for arg, value in zip(command.arguments, arguments)
-            }
+            },
+            'metadata': metadata,
         }
         async with self.session.post(module.url, json=payload) as resp:
             resp.raise_for_status()

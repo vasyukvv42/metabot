@@ -1,9 +1,9 @@
 from typing import Dict
 
 from fastapi import APIRouter, HTTPException
-from pydantic.main import BaseModel
+from pydantic import BaseModel
 
-from metabot.lib.models import Module, SAMPLE_MODULE
+from metabot.models.module import SAMPLE_MODULE, Module
 from metabot.lib.storage import get_all_modules, get_module, add_module
 
 router = APIRouter()

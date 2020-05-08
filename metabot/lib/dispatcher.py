@@ -6,7 +6,7 @@ from aiohttp import ClientSession, ClientError, ClientResponseError
 from fastapi import FastAPI
 from slack import WebClient
 
-from metabot.lib.models import Module, Command
+from metabot.models.module import Command, Module
 from metabot.lib.storage import get_module, get_module_names
 
 log = logging.getLogger(__name__)

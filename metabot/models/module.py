@@ -1,6 +1,6 @@
-from typing import List, Optional, Dict
+from typing import Optional, List, Dict
 
-from pydantic import BaseModel, AnyHttpUrl, validator, Field
+from pydantic import BaseModel, Field, validator, AnyHttpUrl
 
 SAMPLE_MODULE = {
     'name': 'help',

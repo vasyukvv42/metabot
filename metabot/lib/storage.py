@@ -1,7 +1,7 @@
 import logging
 from typing import Dict, Optional, List
 
-from metabot.lib.models import Module
+from metabot.models.module import Module
 
 log = logging.getLogger(__name__)
 

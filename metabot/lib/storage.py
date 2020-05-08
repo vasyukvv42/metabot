@@ -8,7 +8,7 @@ log = logging.getLogger(__name__)
 MODULES: Dict[str, Module] = {}
 
 
-def add_module(module: Module) -> None:
+def add_or_replace_module(module: Module) -> None:
     if module.name in MODULES:
         log.info(f'Replacing module "{module.name}" with {module}')
     else:

@@ -10,14 +10,12 @@ class Message(BaseModel):
     send_ephemeral: bool = False
     user_id: Optional[str]
 
-    # noinspection PyMethodParameters
     @validator('user_id', always=True)
     def user_id_provided_for_ephemeral(
-            cls,
+            cls,  # noqa
             v: Optional[str],
             values: Dict[str, Any]
     ) -> Optional[str]:
-        print(v)
         if values.get('send_ephemeral') and v is None:
             raise ValueError('user_id is required for ephemeral messages')
         return v

@@ -38,10 +38,10 @@ class Command(BaseModel):
     description: Optional[str]
     arguments: List[CommandArgument] = Field(default_factory=list)
 
-    # noinspection PyMethodParameters
     @validator('arguments')
     def no_required_args_after_optional(
-            cls, v: List[CommandArgument]
+            cls,  # noqa
+            v: List[CommandArgument],
     ) -> List[CommandArgument]:
         has_optional = False
         for arg in v:
@@ -59,9 +59,11 @@ class Module(BaseModel):
 
     commands: Dict[str, Command]
 
-    # noinspection PyMethodParameters
     @validator('commands')
-    def command_names_match(cls, v: Dict[str, Command]) -> Dict[str, Command]:
+    def command_names_match(
+            cls,  # noqa
+            v: Dict[str, Command],
+    ) -> Dict[str, Command]:
         if not all(key == command.name for key, command in v.items()):
             raise ValueError('Keys and command names must match')
         return v

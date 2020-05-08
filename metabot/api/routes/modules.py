@@ -4,7 +4,11 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from metabot.models.module import SAMPLE_MODULE, Module
-from metabot.lib.storage import get_all_modules, get_module, add_module
+from metabot.lib.storage import (
+    get_all_modules,
+    get_module,
+    add_or_replace_module,
+)
 
 router = APIRouter()
 
@@ -15,7 +19,7 @@ class GetModulesResponse(BaseModel):
     class Config:
         schema_extra = {
             'example': {
-                'help': SAMPLE_MODULE
+                SAMPLE_MODULE['name']: SAMPLE_MODULE
             }
         }
 
@@ -37,6 +41,5 @@ async def get_module_by_name(module_name: str) -> Module:
 
 @router.post('/', response_model=Module)
 async def register_module(module: Module) -> Module:
-    add_module(module)
-    print(module)
+    add_or_replace_module(module)
     return module

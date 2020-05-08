@@ -1,6 +1,6 @@
 import logging
 from shlex import split
-from typing import Dict, Iterable, List
+from typing import Dict, Iterable, List, Tuple
 
 from aiohttp import ClientSession, ClientError, ClientResponseError
 from fastapi import FastAPI
@@ -23,9 +23,30 @@ class CommandDispatcher:
         self.command = command
 
     async def dispatch(self, payload: Dict[str, str]) -> None:
+        try:
+            module, command, arguments = await self._parse_payload(payload)
+        except ValueError:
+            return
+
+        try:
+            await self._trigger_command(module, command, arguments, payload)
+        except ClientResponseError:
+            log.exception('Module request failed')
+        except ClientError:
+            log.exception('Module request failed')
+            await self._error(
+                payload,
+                'Command execution failed. '
+                'Please consult with the administrator.'
+            )
+
+    async def _parse_payload(
+            self,
+            payload: Dict[str, str],
+    ) -> Tuple[Module, Command, List[str]]:
         parsed_text = split(payload['text'])
         if len(parsed_text) == 0:
-            return await self._error(
+            raise await self._error(
                 payload,
                 f'Usage: `{self.command} [module] [command]`. '
                 f'Available modules: {self._format_strings(get_module_names())}'
@@ -37,7 +58,7 @@ class CommandDispatcher:
 
         module = get_module(module_name)
         if module is None:
-            return await self._error(
+            raise await self._error(
                 payload,
                 f'Module `{module_name}` does not exist. '
                 f'Available modules: {self._format_strings(get_module_names())}'
@@ -46,7 +67,7 @@ class CommandDispatcher:
         try:
             command = module.commands[command_name]
         except KeyError:
-            return await self._error(
+            raise await self._error(
                 payload,
                 f'Command `{command_name}` in module `{module_name}` '
                 f'does not exist. '
@@ -56,23 +77,13 @@ class CommandDispatcher:
         required_arguments = [x for x in command.arguments if not x.is_optional]
         if len(arguments) < len(required_arguments):
             arg_names = (arg.name for arg in required_arguments)
-            return await self._error(
+            raise await self._error(
                 payload,
                 f'Missing one or more required arguments for {command_name}. '
                 f'Required arguments: {self._format_strings(arg_names)}'
             )
 
-        try:
-            await self._trigger_command(module, command, arguments, payload)
-        except ClientResponseError:
-            log.exception('Module request failed')
-        except ClientError:
-            log.exception('Module request failed')
-            return await self._error(
-                payload,
-                'Command execution failed. '
-                'Please consult with the administrator.'
-            )
+        return module, command, arguments
 
     async def _trigger_command(
             self,
@@ -92,7 +103,7 @@ class CommandDispatcher:
         async with self.session.post(module.url, json=payload) as resp:
             resp.raise_for_status()
 
-    async def _error(self, payload: Dict[str, str], message: str) -> None:
+    async def _error(self, payload: Dict[str, str], message: str) -> Exception:
         channel = payload['channel_id']
         user = payload['user_id']
         log.info(
@@ -104,6 +115,7 @@ class CommandDispatcher:
             user=user,
             text=message,
         )
+        return ValueError(message)
 
     @staticmethod
     def _format_strings(strings: Iterable[str]) -> str:

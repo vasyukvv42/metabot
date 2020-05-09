@@ -45,7 +45,7 @@ class Storage:
 
     async def _module_keys(self) -> AsyncIterator[str]:
         async for key in self.redis.iscan(match='module:*'):
-            yield key
+            yield key.decode('utf-8')
 
     async def get_all_modules(self) -> Dict[str, Module]:
         results = {}

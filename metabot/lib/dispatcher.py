@@ -107,7 +107,7 @@ class CommandDispatcher:
             },
             'metadata': metadata,
         }
-        url = f'{module.url}/{command.name}'
+        url = f'{module.url}/commands/{command.name}'
         async with self.session.post(url, json=payload) as resp:
             resp.raise_for_status()
 

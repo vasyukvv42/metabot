@@ -10,11 +10,9 @@ from fastapi import FastAPI, Depends
 from fastapi_metabot.client import (
     AsyncApis,
     ApiClient,
-    models as client_models
+    models
 )
 from fastapi_metabot.client.exceptions import ApiException
-from fastapi_metabot.routes import router
-from fastapi_metabot.utils import current_module
 
 log = logging.getLogger(__name__)
 
@@ -145,7 +143,10 @@ class Module:
         return self._converters.get(to_type, to_type)
 
     def install(self, app: FastAPI, prefix: str = '') -> FastAPI:
-        def set_current_module() -> None:
+        from fastapi_metabot.routes import router
+        from fastapi_metabot.utils import current_module
+
+        async def set_current_module() -> None:
             current_module.set(self)
 
         app.include_router(
@@ -161,19 +162,19 @@ class Module:
         return app
 
     def _start_heartbeat(self) -> None:
-        module = client_models.Module(
+        module = models.Module(
             name=self.name,
             description=self.description,
             url=self.module_url,
-            commands=[client_models.Command(
+            commands={command.name: models.Command(
                 name=command.name,
                 description=command.description,
-                arguments=[client_models.CommandArgument(
+                arguments=[models.CommandArgument(
                     name=arg.name,
                     description=arg.description,
                     is_optional=arg.is_optional,
                 ) for arg in command.arguments],
-            ) for command in self._commands.values()],
+            ) for command in self._commands.values()},
         )
         async_api = AsyncApis(self.metabot_client)
 

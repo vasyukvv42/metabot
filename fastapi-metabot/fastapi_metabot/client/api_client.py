@@ -2,8 +2,7 @@ from asyncio import get_event_loop
 from functools import lru_cache
 from typing import Any, Awaitable, Callable, Dict, Generic, Type, TypeVar, overload
 
-from httpx import AsyncClient
-from httpx.models import Request, Response
+from httpx import AsyncClient, Request, Response
 from pydantic import ValidationError
 
 from fastapi_metabot.client.api.metabot_api import AsyncMetabotApi, SyncMetabotApi

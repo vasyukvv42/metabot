@@ -9,3 +9,6 @@ __pycache__
 .DS_Store
 tunnel.sh
 .env
+build
+dist
+*.egg-info

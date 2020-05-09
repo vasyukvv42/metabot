@@ -20,6 +20,17 @@ services:
       - redis
     env_file: .env
 
+  example:
+    build:
+      context: modules/example
+      dockerfile: Dockerfile
+      target: dev
+    restart: unless-stopped
+    volumes:
+    - './modules/example:/app'
+    depends_on:
+      - metabot
+
   lint:
     image: 'metabot_lint'
     build:

@@ -3,3 +3,4 @@ slackers
 uvicorn
 slackclient
 slackclient[optional]
+aioredis

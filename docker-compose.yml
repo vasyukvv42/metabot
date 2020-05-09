@@ -1,6 +1,11 @@
 version: '3.8'
 
 services:
+  redis:
+    image: 'redis:6.0.1'
+    expose:
+      - 6379
+
   metabot:
     build:
       context: .
@@ -8,19 +13,21 @@ services:
       target: dev
     restart: unless-stopped
     volumes:
-      - './metabot:/metabot/metabot'
+      - './metabot:/app/metabot'
     ports:
       - 8000:8000
+    depends_on:
+      - redis
     env_file: .env
 
-  checks:
-    image: 'metabot_checks'
+  lint:
+    image: 'metabot_lint'
     build:
       context: .
-      dockerfile: checks.dockerfile
+      dockerfile: lint.dockerfile
 
   flake8:
-    image: 'metabot_checks'
+    image: 'metabot_lint'
     command: flake8 .
     volumes:
       - type: bind
@@ -29,8 +36,8 @@ services:
         read_only: True
 
   mypy:
-    image: 'metabot_checks'
-    command: mypy metabot
+    image: 'metabot_lint'
+    command: mypy metabot fastapi-metabot
     volumes:
       - type: bind
         source: .

@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field, validator, AnyHttpUrl
 SAMPLE_MODULE = {
     'name': 'help',
     'description': 'Help module',
-    'url': 'http://help-module:8000/api',
+    'url': 'http://help-module:8000/api/commands',
     'commands': {
         '': {
             'name': '',
@@ -28,13 +28,13 @@ SAMPLE_MODULE = {
 
 
 class CommandArgument(BaseModel):
-    name: str
+    name: str = Field(regex=r'[\w\d]+', min_length=1, max_length=255)
     is_optional: bool = False
     description: Optional[str]
 
 
 class Command(BaseModel):
-    name: str
+    name: str = Field(regex=r'[\w\d]*', max_length=255)
     description: Optional[str]
     arguments: List[CommandArgument] = Field(default_factory=list)
 
@@ -53,7 +53,7 @@ class Command(BaseModel):
 
 
 class Module(BaseModel):
-    name: str
+    name: str = Field(regex=r'[\w\d]+', min_length=1, max_length=255)
     description: Optional[str]
     url: AnyHttpUrl
 

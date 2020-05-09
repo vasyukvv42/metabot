@@ -3,13 +3,21 @@ import logging
 from fastapi import HTTPException
 from slack import WebClient
 from slack.errors import SlackApiError
+from starlette.requests import Request
 
 from metabot.models.chat import Message
 
 log = logging.getLogger(__name__)
 
 
-async def send_message(message: Message, slack: WebClient) -> None:
+async def get_slack(request: Request) -> WebClient:
+    return request.app.state.slack
+
+
+async def send_message(
+        slack: WebClient,
+        message: Message,
+) -> None:
     try:
         if message.send_ephemeral:
             await slack.chat_postEphemeral(

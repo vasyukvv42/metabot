@@ -15,4 +15,3 @@ flake8-tidy-imports
 flake8-bandit
 pep8-naming
 mypy
-pytest

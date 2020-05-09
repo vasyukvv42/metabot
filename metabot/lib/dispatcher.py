@@ -6,8 +6,8 @@ from aiohttp import ClientSession, ClientError, ClientResponseError
 from fastapi import FastAPI
 from slack import WebClient
 
+from metabot.lib.storage import Storage
 from metabot.models.module import Command, Module
-from metabot.lib.storage import get_module, get_module_names
 
 log = logging.getLogger(__name__)
 
@@ -15,11 +15,13 @@ log = logging.getLogger(__name__)
 class CommandDispatcher:
     session: ClientSession
     slack: WebClient
+    storage: Storage
     command: str
 
     def __init__(self, app: FastAPI, command: str = '/meta') -> None:
         self.session = app.state.session
         self.slack = app.state.slack
+        self.storage = app.state.storage
         self.command = command
 
     async def dispatch(self, payload: Dict[str, str]) -> None:
@@ -46,22 +48,28 @@ class CommandDispatcher:
     ) -> Tuple[Module, Command, List[str]]:
         parsed_text = split(payload['text'])
         if len(parsed_text) == 0:
+            formatted_modules = self._format_strings(
+                await self.storage.get_module_names()
+            )
             raise await self._error(
                 payload,
                 f'Usage: `{self.command} [module] [command]`. '
-                f'Available modules: {self._format_strings(get_module_names())}'
+                f'Available modules: {formatted_modules}'
             )
         elif len(parsed_text) == 1:
             parsed_text.append('')  # to trigger empty command
 
         module_name, command_name, *arguments = parsed_text
 
-        module = get_module(module_name)
+        module = await self.storage.get_module(module_name)
         if module is None:
+            formatted_modules = self._format_strings(
+                await self.storage.get_module_names()
+            )
             raise await self._error(
                 payload,
                 f'Module `{module_name}` does not exist. '
-                f'Available modules: {self._format_strings(get_module_names())}'
+                f'Available modules: {formatted_modules}'
             )
 
         try:
@@ -93,14 +101,14 @@ class CommandDispatcher:
             metadata: Dict[str, str],
     ) -> None:
         payload = {
-            'command': command.name,
             'arguments': {
                 arg.name: value
                 for arg, value in zip(command.arguments, arguments)
             },
             'metadata': metadata,
         }
-        async with self.session.post(module.url, json=payload) as resp:
+        url = f'{module.url}/{command.name}'
+        async with self.session.post(url, json=payload) as resp:
             resp.raise_for_status()
 
     async def _error(self, payload: Dict[str, str], message: str) -> Exception:

@@ -2,13 +2,15 @@ import asyncio
 import logging
 from typing import Callable
 
+import aioredis
 from aiohttp import ClientSession
 from fastapi import FastAPI
 from slack import WebClient
 from slackers.hooks import commands
 
-from metabot.core.config import SLACK_API_TOKEN
+from metabot.core.config import SLACK_API_TOKEN, REDIS_URL
 from metabot.lib.dispatcher import CommandDispatcher
+from metabot.lib.storage import Storage
 
 log = logging.getLogger(__name__)
 
@@ -21,6 +23,8 @@ def start_app_handler(app: FastAPI) -> Callable:
             run_async=True,
             session=app.state.session,
         )
+        app.state.redis = await aioredis.create_redis_pool(REDIS_URL)
+        app.state.storage = Storage(app.state.redis)
 
         app.state.dispatcher = CommandDispatcher(app)
         commands.on('meta', app.state.dispatcher.dispatch)

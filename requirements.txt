@@ -6,7 +6,8 @@
 #
 aiodns==2.0.0             # via slackclient
 aiohttp==3.6.2            # via slackclient
-async-timeout==3.0.1      # via aiohttp
+aioredis==1.3.1           # via -r requirements.in
+async-timeout==3.0.1      # via aiohttp, aioredis
 attrs==19.3.0             # via aiohttp
 certifi==2020.4.5.1       # via requests
 cffi==1.14.0              # via pycares
@@ -14,6 +15,7 @@ chardet==3.0.4            # via aiohttp, requests
 click==7.1.2              # via uvicorn
 fastapi==0.54.1           # via -r requirements.in, slackers
 h11==0.9.0                # via uvicorn
+hiredis==1.0.1            # via aioredis
 httptools==0.1.1          # via uvicorn
 idna==2.9                 # via requests, yarl
 multidict==4.7.5          # via aiohttp, yarl

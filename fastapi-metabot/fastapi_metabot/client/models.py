@@ -37,6 +37,7 @@ class Module(BaseModel):
     description: "Optional[str]" = Field(None, alias="description")
     url: "str" = Field(..., alias="url")
     commands: "Dict[str, Command]" = Field(..., alias="commands")
+    actions: "Optional[List[str]]" = Field(None, alias="actions")
 
 
 class SendMessageResponse(BaseModel):

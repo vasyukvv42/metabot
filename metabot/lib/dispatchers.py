@@ -1,28 +1,80 @@
+# flake8: noqa
+import asyncio
 import logging
 from shlex import split
-from typing import Dict, Iterable, List, Tuple
+from typing import Dict, Tuple, List, Iterable, Any
 
-from aiohttp import ClientSession, ClientError, ClientResponseError
+from aiohttp import ClientSession, ClientError
 from fastapi import FastAPI
 from slack import WebClient
 
 from metabot.lib.storage import Storage
-from metabot.models.module import Command, Module
+from metabot.models.module import Module, Command
+
 
 log = logging.getLogger(__name__)
+
+
+class ActionDispatcher:
+    session: ClientSession
+    storage: Storage
+
+    def __init__(self, app: FastAPI) -> None:
+        self.session = app.state.session
+        self.storage = app.state.storage
+
+    async def dispatch(self, payload: Dict[str, Any]) -> None:
+        action_ids = [
+            f'{payload["type"]}:{action["action_id"]}'
+            for action in payload.get('actions', [])
+        ]
+
+        if action_callback_id := payload.get('callback_id'):
+            action_ids.append(f'{payload["type"]}:{action_callback_id}')
+
+        if view := payload.get('view'):
+            if view_callback_id := view.get("callback_id"):
+                action_ids.append(f'{payload["type"]}:{view_callback_id}')
+
+        await self._trigger_all_actions(action_ids, payload)
+
+    async def _trigger_all_actions(
+            self,
+            action_ids: List[str],
+            payload: Dict[str, Any],
+    ) -> None:
+        futures = []
+        for action_id in action_ids:
+            module = await self.storage.get_module_by_action(action_id)
+            if module is not None:
+                futures.append(
+                    self._trigger_action(module, action_id, payload)
+                )
+        await asyncio.gather(*futures)
+
+    async def _trigger_action(
+            self,
+            module: Module,
+            action_id: str,
+            metadata: Dict[str, Any]
+    ) -> None:
+        payload = {
+            'metadata': metadata,
+        }
+        url = f'{module.url}/actions/{action_id}'
+        async with self.session.post(url, json=payload) as resp:
+            resp.raise_for_status()
 
 
 class CommandDispatcher:
     session: ClientSession
     slack: WebClient
     storage: Storage
-    command: str
 
-    def __init__(self, app: FastAPI, command: str = '/meta') -> None:
+    def __init__(self, app: FastAPI) -> None:
         self.session = app.state.session
         self.slack = app.state.slack
         self.storage = app.state.storage
-        self.command = command
 
     async def dispatch(self, payload: Dict[str, str]) -> None:
         try:
@@ -32,8 +84,6 @@ class CommandDispatcher:
 
         try:
             await self._trigger_command(module, command, arguments, payload)
-        except ClientResponseError:
-            log.exception('Module request failed')
         except ClientError:
             log.exception('Module request failed')
             await self._error(
@@ -53,11 +103,11 @@ class CommandDispatcher:
             )
             raise await self._error(
                 payload,
-                f'Usage: `{self.command} [module] [command]`. '
+                f'Usage: `{payload["command"]} [module] [command]`. '
                 f'Available modules: {formatted_modules}'
             )
         elif len(parsed_text) == 1:
-            parsed_text.append('')  # to trigger empty command
+            parsed_text.append('')
 
         module_name, command_name, *arguments = parsed_text
 
@@ -77,9 +127,8 @@ class CommandDispatcher:
         except KeyError:
             raise await self._error(
                 payload,
-                f'Command `{command_name}` in module `{module_name}` '
-                f'does not exist. ' if command_name else ''
-                + f'Available commands: {self._format_strings(module.commands)}'
+                f'Usage: `{payload["command"]} {module_name} [command]`. '
+                f'Available commands: {self._format_strings(module.commands)}'
             )
 
         required_arguments = [x for x in command.arguments if not x.is_optional]

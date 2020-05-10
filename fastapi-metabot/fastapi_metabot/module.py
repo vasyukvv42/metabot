@@ -15,6 +15,8 @@ from fastapi_metabot.client import (
     models
 )
 from fastapi_metabot.client.exceptions import ApiException
+from fastapi_metabot.routes import router
+from fastapi_metabot.utils import current_module
 
 log = logging.getLogger(__name__)
 
@@ -45,6 +47,8 @@ class Module:
     heartbeat_delay: float
 
     _commands: Dict[str, Command]
+    _views: Dict[str, Callable]
+    _actions: Dict[str, Callable]
     _converters: Dict[Type, Converter]
     _heartbeat: Optional[Task]
 
@@ -63,6 +67,8 @@ class Module:
         self.heartbeat_delay = heartbeat_delay
 
         self._commands = {}
+        self._views = {}
+        self._actions = {}
         self._converters = {}
         self._heartbeat = None
 
@@ -74,6 +80,8 @@ class Module:
             description: Optional[str] = None,
             arg_descriptions: Optional[Dict[str, str]] = None,
     ) -> Callable:
+        assert name not in self._commands, 'Duplicate command names detected'
+
         def wrapper(f: Callable) -> Callable:
             arguments = self._parse_arguments(f, arg_descriptions)
             self._commands[name] = Command(
@@ -95,6 +103,8 @@ class Module:
             *,
             converter: Optional[Converter] = None,
     ) -> Callable:
+        assert to_type not in self._converters, 'Duplicate converters detected'
+
         def wrapper(f: Callable) -> Callable:
             self._converters[to_type] = f
             return f
@@ -103,6 +113,40 @@ class Module:
             return wrapper
         else:
             return wrapper(converter)
+
+    def action(
+            self,
+            name: str,
+            *,
+            function: Optional[Callable] = None,
+    ) -> Callable:
+        assert name not in self._actions, 'Duplicate action names detected'
+
+        def wrapper(f: Callable) -> Callable:
+            self._actions[name] = f
+            return f
+
+        if function is None:
+            return wrapper
+        else:
+            return wrapper(function)
+
+    def view(
+            self,
+            name: str,
+            *,
+            function: Optional[Callable] = None
+    ) -> Callable:
+        assert name not in self._views, 'Duplicate view names detected'
+
+        def wrapper(f: Callable) -> Callable:
+            self._views[name] = f
+            return f
+
+        if function is None:
+            return wrapper
+        else:
+            return wrapper(function)
 
     @staticmethod
     def _parse_arguments(
@@ -136,18 +180,32 @@ class Module:
             for arg in command.arguments
             if (value := arguments.get(arg.name))
         }
-        if iscoroutinefunction(command.func):
-            await command.func(**converted_args)
+        await self._maybe_await(command.func, **converted_args)
+
+    async def execute_action(self, action_id: str) -> None:
+        action_type, action_name = action_id.split(':', 2)
+        if action_type == 'block_actions':
+            await self._maybe_await(self._actions[action_name])
+        elif action_type == 'view_submission':
+            await self._maybe_await(self._views[action_name])
         else:
-            command.func(**converted_args)
+            log.error(f'Unknown action {action_id} triggered')
+
+    @staticmethod
+    async def _maybe_await(
+            function: Callable,
+            *args: List,
+            **kwargs: Dict
+    ) -> Any:
+        if iscoroutinefunction(function):
+            return await function(*args, **kwargs)
+        else:
+            return function(*args, **kwargs)
 
     def _get_converter(self, to_type: Type) -> Converter:
         return self._converters.get(to_type, to_type)
 
     def install(self, app: FastAPI, prefix: str = '') -> FastAPI:
-        from fastapi_metabot.routes import router
-        from fastapi_metabot.utils import current_module
-
         async def set_current_module() -> None:
             current_module.set(self)
 
@@ -177,6 +235,10 @@ class Module:
                     is_optional=arg.is_optional,
                 ) for arg in command.arguments],
             ) for command in self._commands.values()},
+            actions=(
+                [f'block_actions:{action}' for action in self._actions] +
+                [f'view_submission:{view}' for view in self._views]
+            )
         )
         async_api = AsyncApis(self.metabot_client)
 

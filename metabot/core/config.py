@@ -12,5 +12,5 @@ REDIS_URL = config('REDIS_URL')
 MODULE_EXPIRATION_SECONDS = config(
     'MODULE_EXPIRATION_SECONDS',
     cast=int,
-    default=60,
+    default=30,
 )

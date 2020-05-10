@@ -2,12 +2,12 @@ import logging
 
 from fastapi import FastAPI
 
-from config import MODULE_URL, METABOT_URL
+from config import MODULE_URL, METABOT_URL, MODULE_HELP_ACTION
 from fastapi_metabot.module import Module
 from utils import (
     generate_default_help,
     generate_module_help,
-    send_ephemeral_to_user
+    send_ephemeral_to_user, get_module_name_from_button
 )
 
 log = logging.getLogger(__name__)
@@ -41,6 +41,21 @@ async def get_help(module_name: str = None) -> None:
             log.exception('Help generation failed, sending default help')
             return await get_help()
 
+    await send_ephemeral_to_user(
+        module.metabot_client,
+        blocks[0]['text']['text'],
+        blocks
+    )
+
+
+@module.action(MODULE_HELP_ACTION)
+async def module_help_action() -> None:
+    module_name = await get_module_name_from_button()
+    blocks = await generate_module_help(
+        module.metabot_client,
+        module_name,
+        False
+    )
     await send_ephemeral_to_user(
         module.metabot_client,
         blocks[0]['text']['text'],

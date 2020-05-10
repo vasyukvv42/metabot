@@ -58,6 +58,7 @@ class Module(BaseModel):
     url: AnyHttpUrl
 
     commands: Dict[str, Command]
+    actions: List[str] = Field(default_factory=list)
 
     @validator('commands')
     def command_names_match(

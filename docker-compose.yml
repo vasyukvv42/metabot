@@ -48,7 +48,7 @@ services:
 
   mypy:
     image: 'metabot_lint'
-    command: mypy metabot fastapi-metabot modules/example modules/help
+    command: mypy metabot fastapi-metabot modules/help
     volumes:
       - type: bind
         source: .

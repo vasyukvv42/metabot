@@ -1,9 +1,14 @@
 import logging
 from typing import Dict, List, Iterable, Optional
 
+from config import MODULE_HELP_ACTION
 from fastapi_metabot.client import ApiClient, AsyncApis
 from fastapi_metabot.client.models import Module, Message
-from fastapi_metabot.utils import slack_metadata
+from fastapi_metabot.utils import (
+    get_current_user_id,
+    get_current_channel_id,
+    action_metadata
+)
 
 log = logging.getLogger(__name__)
 
@@ -12,7 +17,15 @@ DIVIDER = {
 }
 
 
-async def get_module(metabot_client: ApiClient, module_name: str) -> Module:
+async def get_module_name_from_button() -> str:
+    metadata = action_metadata.get()
+    if metadata is None or metadata.actions is None:
+        raise ValueError('Must be called from action context')
+    action = metadata.actions[0]
+    return action['value']
+
+
+async def _get_module(metabot_client: ApiClient, module_name: str) -> Module:
     api = AsyncApis(metabot_client).metabot_api
     module = (
         await api.get_module_by_name_api_modules_module_name_get(module_name)
@@ -20,7 +33,7 @@ async def get_module(metabot_client: ApiClient, module_name: str) -> Module:
     return module
 
 
-async def get_all_modules(metabot_client: ApiClient) -> Iterable[Module]:
+async def _get_all_modules(metabot_client: ApiClient) -> Iterable[Module]:
     api = AsyncApis(metabot_client).metabot_api
     return (await api.get_modules_api_modules_get()).modules.values()
 
@@ -31,23 +44,19 @@ async def send_ephemeral_to_user(
         blocks: Optional[List[Dict]] = None
 ) -> None:
     api = AsyncApis(metabot_client).metabot_api
-    metadata = slack_metadata.get()
-    if metadata:
-        await api.send_message_to_slack_api_chat_post(
-            Message(
-                text=text,
-                blocks=blocks,
-                user_id=metadata.user_id,
-                channel_id=metadata.channel_id,
-                send_ephemeral=True
-            )
+    await api.send_message_to_slack_api_chat_post(
+        Message(
+            text=text,
+            blocks=blocks,
+            user_id=await get_current_user_id(),
+            channel_id=await get_current_channel_id(),
+            send_ephemeral=True
         )
-    else:
-        log.error('Failed sending message – no Slack metadata in ctx')
+    )
 
 
 async def generate_default_help(metabot_client: ApiClient) -> List[Dict]:
-    modules = await get_all_modules(metabot_client)
+    modules = await _get_all_modules(metabot_client)
     blocks: List[Dict] = [
         {
             'type': 'section',
@@ -60,16 +69,20 @@ async def generate_default_help(metabot_client: ApiClient) -> List[Dict]:
         DIVIDER
     ]
     for module in modules:
-        blocks += _module_blocks(module)
+        blocks += _module_blocks(module, True)
     return blocks
 
 
 async def generate_module_help(
         metabot_client: ApiClient,
         module_name: str,
+        include_module_description: bool = True,
 ) -> List[Dict]:
-    module = await get_module(metabot_client, module_name)
-    blocks: List[Dict] = _module_blocks(module)
+    module = await _get_module(metabot_client, module_name)
+    blocks: List[Dict] = []
+    if include_module_description:
+        blocks += _module_blocks(module)
+
     for command in module.commands.values():
         if command.arguments is not None:
             arguments_short = ' '.join(
@@ -101,14 +114,26 @@ async def generate_module_help(
     return blocks
 
 
-def _module_blocks(module: Module) -> List[Dict]:
-    return [
-        {
-            'type': 'section',
+def _module_blocks(module: Module, add_button: bool = False) -> List[Dict]:
+    module_section = {
+        'type': 'section',
+        'text': {
+            'type': 'mrkdwn',
+            'text': f'*`{module.name}` module.*\n{module.description}'
+        }
+    }
+    if add_button:
+        module_section['accessory'] = {
+            'action_id': MODULE_HELP_ACTION,
+            'type': 'button',
             'text': {
-                'type': 'mrkdwn',
-                'text': f'*`{module.name}` module.*\n{module.description}'
-            }
-        },
+                'type': 'plain_text',
+                'emoji': True,
+                'text': 'Commands'
+            },
+            'value': module.name
+        }
+    return [
+        module_section,
         DIVIDER
     ]

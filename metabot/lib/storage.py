@@ -31,17 +31,31 @@ class Storage:
         return Module.parse_raw(raw_module)
 
     async def add_or_replace_module(self, module: Module) -> None:
-        await self.redis.set(
+        tr = self.redis.multi_exec()
+        tr.set(
             f'module:{module.name}',
             self._encode_module(module),
             expire=MODULE_EXPIRATION_SECONDS,
         )
+        for action in module.actions:
+            tr.set(
+                f'action:{action}',
+                module.name,
+                expire=MODULE_EXPIRATION_SECONDS,
+            )
+        await tr.execute()
 
     async def get_module(self, module_name: str) -> Optional[Module]:
         raw_module = await self.redis.get(f'module:{module_name}')
         if raw_module is None:
             return None
         return self._decode_module(raw_module)
+
+    async def get_module_by_action(self, action: str) -> Optional[Module]:
+        module_name = await self.redis.get(f'action:{action}')
+        if module_name is None:
+            return None
+        return await self.get_module(module_name.decode('utf-8'))
 
     async def _module_keys(self) -> AsyncIterator[str]:
         async for key in self.redis.iscan(match='module:*'):

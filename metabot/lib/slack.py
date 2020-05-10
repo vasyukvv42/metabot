@@ -14,7 +14,7 @@ async def get_slack(request: Request) -> WebClient:
     return request.app.state.slack
 
 
-async def send_message(
+async def post_message(
         slack: WebClient,
         message: Message,
 ) -> None:

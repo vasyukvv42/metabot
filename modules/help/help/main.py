@@ -2,12 +2,13 @@ import logging
 
 from fastapi import FastAPI
 
-from config import MODULE_URL, METABOT_URL, MODULE_HELP_ACTION
+from help.config import MODULE_URL, METABOT_URL, MODULE_HELP_ACTION
 from fastapi_metabot.module import Module
-from utils import (
+from help.utils import (
     generate_default_help,
     generate_module_help,
-    send_ephemeral_to_user, get_module_name_from_button
+    send_message_to_user,
+    get_module_name_from_button
 )
 
 log = logging.getLogger(__name__)
@@ -15,7 +16,7 @@ app = FastAPI()
 
 module = Module(
     name='help',
-    description='Provides info about MetaBot modules and their commands',
+    description='Get info about installed MetaBot modules and commands',
     module_url=MODULE_URL,
     metabot_url=METABOT_URL,
 )
@@ -23,7 +24,9 @@ module = Module(
 
 @module.command(
     'me',
-    description='Displays help about a module',
+    description='Displays info about a module and lists available commands.\n'
+                'When module name is not provided, displays short info about '
+                'all modules.',
     arg_descriptions={
         'module_name': 'Module name',
     }
@@ -41,7 +44,7 @@ async def get_help(module_name: str = None) -> None:
             log.exception('Help generation failed, sending default help')
             return await get_help()
 
-    await send_ephemeral_to_user(
+    await send_message_to_user(
         module.metabot_client,
         blocks[0]['text']['text'],
         blocks
@@ -56,7 +59,7 @@ async def module_help_action() -> None:
         module_name,
         False
     )
-    await send_ephemeral_to_user(
+    await send_message_to_user(
         module.metabot_client,
         blocks[0]['text']['text'],
         blocks

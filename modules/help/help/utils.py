@@ -1,7 +1,7 @@
 import logging
 from typing import Dict, List, Iterable, Optional
 
-from config import MODULE_HELP_ACTION
+from help.config import MODULE_HELP_ACTION
 from fastapi_metabot.client import ApiClient, AsyncApis
 from fastapi_metabot.client.models import Module, Message
 from fastapi_metabot.utils import (
@@ -38,13 +38,13 @@ async def _get_all_modules(metabot_client: ApiClient) -> Iterable[Module]:
     return (await api.get_modules_api_modules_get()).modules.values()
 
 
-async def send_ephemeral_to_user(
+async def send_message_to_user(
         metabot_client: ApiClient,
         text: str,
         blocks: Optional[List[Dict]] = None
 ) -> None:
     api = AsyncApis(metabot_client).metabot_api
-    await api.send_message_to_slack_api_chat_post(
+    await api.send_message_api_chat_post(
         Message(
             text=text,
             blocks=blocks,
@@ -62,8 +62,7 @@ async def generate_default_help(metabot_client: ApiClient) -> List[Dict]:
             'type': 'section',
             'text': {
                 'type': 'mrkdwn',
-                'text': '*Usage:* `/meta help me "module_name"`. '
-                        'Available modules:'
+                'text': '*Available modules:*'
             }
         },
         DIVIDER
@@ -89,7 +88,7 @@ async def generate_module_help(
                 f'"{arg.name}"' for arg in command.arguments
             )
             arguments_long = '\n'.join(
-                f'- *{arg.name}* '
+                f'- *{arg.name}*\t'
                 f'{arg.description if arg.description else ""} '
                 f'{"_(optional)_" if arg.is_optional else ""}'
                 for arg in command.arguments
@@ -99,13 +98,14 @@ async def generate_module_help(
             arguments_long = ''
 
         full_command = f'`/meta {module_name} {command.name} {arguments_short}`'
+        description = command.description or ''
         blocks += [
             {
                 'type': 'section',
                 'text': {
                     'type': 'mrkdwn',
                     'text': f'{full_command}\n'
-                            f'{command.description}\n'
+                            f'{description}\n'
                             f'{arguments_long}'
                 }
             },
@@ -119,7 +119,7 @@ def _module_blocks(module: Module, add_button: bool = False) -> List[Dict]:
         'type': 'section',
         'text': {
             'type': 'mrkdwn',
-            'text': f'*`{module.name}` module.*\n{module.description}'
+            'text': f'*`{module.name}` module*\n{module.description}'
         }
     }
     if add_button:

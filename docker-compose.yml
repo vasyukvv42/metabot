@@ -1,10 +1,21 @@
 version: '3.8'
 
 services:
+
+  # DATABASES
+
   redis:
     image: 'redis:6.0.1'
     expose:
       - 6379
+
+  mongo:
+    image: mongo:4.2.5
+    restart: always
+    volumes:
+      - mongodb:/data/db
+
+  # METABOT
 
   metabot:
     build:
@@ -20,6 +31,8 @@ services:
       - redis
     env_file: .env
 
+  # METABOT MODULES
+
   help:
     build:
       context: modules/help
@@ -30,6 +43,22 @@ services:
     - './modules/help:/app'
     depends_on:
       - metabot
+    env_file: modules/help/.env
+
+  vacations:
+    build:
+      context: modules/vacations
+      dockerfile: Dockerfile
+      target: dev
+    restart: unless-stopped
+    volumes:
+      - './modules/vacations:/app'
+    depends_on:
+      - metabot
+      - mongo
+    env_file: modules/vacations/.env
+
+  # LINT & TYPE CHECKING
 
   lint:
     image: 'metabot_lint'
@@ -48,9 +77,13 @@ services:
 
   mypy:
     image: 'metabot_lint'
-    command: mypy metabot fastapi-metabot modules/help
+    command: mypy metabot fastapi-metabot modules/help modules/vacations
     volumes:
       - type: bind
         source: .
         target: /app
         read_only: True
+
+
+volumes:
+  mongodb:

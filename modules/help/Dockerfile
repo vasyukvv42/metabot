@@ -11,9 +11,9 @@ RUN pip install --upgrade pip \
 COPY . .
 EXPOSE 8000
 
-CMD ["uvicorn", "main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "help.main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"]
 
 
 FROM dev AS deploy
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["uvicorn", "help.main:app", "--host", "0.0.0.0", "--port", "8000"]

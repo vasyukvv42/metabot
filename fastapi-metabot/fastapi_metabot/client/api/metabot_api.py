@@ -29,7 +29,7 @@ class _MetabotApi:
 
         return self.api_client.request(type_=m.Module, method="POST", url="/api/modules/", json=body)
 
-    def _build_for_send_message_to_slack_api_chat_post(self, message: m.Message) -> Awaitable[m.SendMessageResponse]:
+    def _build_for_send_message_api_chat_post(self, message: m.Message) -> Awaitable[m.SendMessageResponse]:
         body = jsonable_encoder(message)
 
         return self.api_client.request(type_=m.SendMessageResponse, method="POST", url="/api/chat/", json=body)
@@ -45,8 +45,8 @@ class AsyncMetabotApi(_MetabotApi):
     async def register_module_api_modules_post(self, module: m.Module) -> m.Module:
         return await self._build_for_register_module_api_modules_post(module=module)
 
-    async def send_message_to_slack_api_chat_post(self, message: m.Message) -> m.SendMessageResponse:
-        return await self._build_for_send_message_to_slack_api_chat_post(message=message)
+    async def send_message_api_chat_post(self, message: m.Message) -> m.SendMessageResponse:
+        return await self._build_for_send_message_api_chat_post(message=message)
 
 
 class SyncMetabotApi(_MetabotApi):
@@ -62,6 +62,6 @@ class SyncMetabotApi(_MetabotApi):
         coroutine = self._build_for_register_module_api_modules_post(module=module)
         return get_event_loop().run_until_complete(coroutine)
 
-    def send_message_to_slack_api_chat_post(self, message: m.Message) -> m.SendMessageResponse:
-        coroutine = self._build_for_send_message_to_slack_api_chat_post(message=message)
+    def send_message_api_chat_post(self, message: m.Message) -> m.SendMessageResponse:
+        coroutine = self._build_for_send_message_api_chat_post(message=message)
         return get_event_loop().run_until_complete(coroutine)

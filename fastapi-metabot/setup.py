@@ -1,9 +1,7 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 import io
 import os
 from pathlib import Path
+from typing import List
 
 from setuptools import find_packages, setup
 
@@ -18,7 +16,7 @@ REQUIRES_PYTHON = '>=3.8.0'
 
 
 # What packages are required for this module to be executed?
-def list_reqs(fname='requirements.txt'):
+def list_reqs(fname: str = 'requirements.txt') -> List[str]:
     with open(fname) as fd:
         return [x for x in fd.read().splitlines() if not x.startswith('#')]
 

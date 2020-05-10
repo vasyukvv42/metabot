@@ -1,3 +1,5 @@
+# flake8: noqa
+# TODO: remove noqa after pyflakes bug is fixed
 import asyncio
 import logging
 from asyncio import iscoroutinefunction, Task
@@ -130,9 +132,9 @@ class Module:
     ) -> None:
         command = self._commands[name]
         converted_args = {
-            arg.name: self._get_converter(arg.type)(arguments[arg.name])
-            for arg
-            in command.arguments
+            arg.name: self._get_converter(arg.type)(value)
+            for arg in command.arguments
+            if (value := arguments.get(arg.name))
         }
         if iscoroutinefunction(command.func):
             await command.func(**converted_args)

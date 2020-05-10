@@ -31,6 +31,17 @@ services:
     depends_on:
       - metabot
 
+  help:
+    build:
+      context: modules/help
+      dockerfile: Dockerfile
+      target: dev
+    restart: unless-stopped
+    volumes:
+    - './modules/help:/app'
+    depends_on:
+      - metabot
+
   lint:
     image: 'metabot_lint'
     build:
@@ -48,7 +59,7 @@ services:
 
   mypy:
     image: 'metabot_lint'
-    command: mypy metabot fastapi-metabot
+    command: mypy metabot fastapi-metabot modules/example modules/help
     volumes:
       - type: bind
         source: .

@@ -7,4 +7,6 @@ exclude =
     __pycache__,
     static,
     venv,
-    fastapi-metabot/fastapi_metabot/client/
+    fastapi-metabot/fastapi_metabot/client/,
+    fastapi-metabot/build/,
+    fastapi-metabot/dist/

@@ -19,7 +19,7 @@ module.converter(datetime, converter=datetime.fromisoformat)
 
 
 @module.command('test', description='Test command')
-async def test(test_argument: str, kek: datetime):
+async def test(test_argument: str, kek: datetime) -> None:
     api = AsyncApis(module.metabot_client)
     await api.metabot_api.send_message_to_slack_api_chat_post(
         Message(

@@ -78,8 +78,8 @@ class CommandDispatcher:
             raise await self._error(
                 payload,
                 f'Command `{command_name}` in module `{module_name}` '
-                f'does not exist. '
-                f'Available commands: {self._format_strings(module.commands)}'
+                f'does not exist. ' if command_name else ''
+                + f'Available commands: {self._format_strings(module.commands)}'
             )
 
         required_arguments = [x for x in command.arguments if not x.is_optional]

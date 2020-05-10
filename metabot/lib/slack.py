@@ -24,13 +24,13 @@ async def send_message(
                 channel=message.channel_id,
                 user=message.user_id,
                 text=message.text,
-                message=message.blocks,
+                blocks=message.blocks,
             )
         else:
             await slack.chat_postMessage(
                 channel=message.channel_id,
                 text=message.text,
-                message=message.blocks,
+                blocks=message.blocks,
             )
     except SlackApiError as e:
         log.exception('Failed to send message')

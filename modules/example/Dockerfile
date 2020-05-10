@@ -5,7 +5,7 @@ WORKDIR /app
 ENV PYTHONPATH "${PYTHONPATH}:/app"
 
 RUN pip install --upgrade pip \
- && pip install uvicorn fastapi-metabot==0.0.6 --no-cache-dir
+ && pip install uvicorn fastapi-metabot==0.0.7 --no-cache-dir
 
 COPY . .
 EXPOSE 8000

@@ -37,18 +37,6 @@ module = Module(
 UserId = str
 
 
-@module.converter(date)
-async def convert_date(iso_date: str) -> date:
-    try:
-        return date.fromisoformat(iso_date)
-    except ValueError as e:
-        await send_ephemeral(
-            module.metabot_client,
-            f'Invalid date format: `{iso_date}`'
-        )
-        raise e
-
-
 @module.converter(UserId)
 async def convert_user_id(user_id: str) -> UserId:
     user_id_search = search(r'<@(\w+)\|(\w+)>', user_id)
@@ -61,6 +49,18 @@ async def convert_user_id(user_id: str) -> UserId:
             f'Invalid user mention: `{user_id}`'
         )
         raise ValueError('Invalid UserId')
+
+
+@module.converter(date)
+async def convert_date(iso_date: str) -> date:
+    try:
+        return date.fromisoformat(iso_date)
+    except ValueError as e:
+        await send_ephemeral(
+            module.metabot_client,
+            f'Invalid date format: `{iso_date}`'
+        )
+        raise e
 
 
 @module.command(
@@ -94,8 +94,8 @@ async def request(
 
 @module.command(
     'approve',
-    description=f'Approve a vacation request.\n'
-                f'Available only in the admin channel.',
+    description='Approve a vacation request.\n'
+                'Available only in the admin channel.',
     arg_descriptions={
         'request_id': 'Id of the request to be approved '
                       '(e.g. `5eb95d610ec29ce040c8c144`)'
@@ -118,8 +118,8 @@ async def approve(request_id: str) -> None:
 
 @module.command(
     'deny',
-    description=f'Deny a vacation request.\n'
-                f'Available only in the admin channel.',
+    description='Deny a vacation request.\n'
+                'Available only in the admin channel.',
     arg_descriptions={
         'request_id': 'Id of the request to be denied '
                       '(e.g. `5eb95d610ec29ce040c8c144`)'
@@ -168,6 +168,12 @@ async def request_view() -> None:
 
 @module.action(APPROVE_BUTTON_ACTION_ID)
 async def approve_button_action() -> None:
+    if not await is_admin_channel():
+        return await send_ephemeral(
+            module.metabot_client,
+            'This command is available only in the admin channel.'
+        )
+
     request_id = await get_request_id_from_button()
     await process_request(
         app.state.history,
@@ -179,6 +185,12 @@ async def approve_button_action() -> None:
 
 @module.action(DENY_BUTTON_ACTION_ID)
 async def deny_button_action() -> None:
+    if not await is_admin_channel():
+        return await send_ephemeral(
+            module.metabot_client,
+            'This command is available only in the admin channel.'
+        )
+
     request_id = await get_request_id_from_button()
     await process_request(
         app.state.history,

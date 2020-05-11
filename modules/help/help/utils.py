@@ -44,7 +44,7 @@ async def send_message_to_user(
         blocks: Optional[List[Dict]] = None
 ) -> None:
     api = AsyncApis(metabot_client).metabot_api
-    resp = await api.request_api_slack_post(
+    await api.request_api_slack_post(
         SlackRequest(
             method='chat_postEphemeral',
             payload={
@@ -55,7 +55,6 @@ async def send_message_to_user(
             }
         )
     )
-    log.debug(resp.data)
 
 
 async def generate_default_help(metabot_client: ApiClient) -> List[Dict]:

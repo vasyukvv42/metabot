@@ -11,7 +11,8 @@ from fastapi_metabot.client.models import SlackRequest
 from fastapi_metabot.utils import (
     get_current_user_id,
     get_current_channel_id,
-    command_metadata, action_metadata,
+    command_metadata,
+    action_metadata,
 )
 from vacations.config import (
     REQUEST_VIEW_ID,
@@ -43,9 +44,8 @@ async def send_ephemeral(
 ) -> None:
     user = await get_current_user_id()
     log.info(f'Sending ephemeral to user {user}: {text}')
-
     api = AsyncApis(metabot_client).metabot_api
-    resp = await api.request_api_slack_post(
+    await api.request_api_slack_post(
         SlackRequest(
             method='chat_postEphemeral',
             payload={
@@ -56,34 +56,34 @@ async def send_ephemeral(
             }
         )
     )
-    log.debug(resp.data)
 
 
-async def send_notification(
+async def _send_notification(
         metabot_client: ApiClient,
         text: str,
         blocks: Optional[List[Dict]] = None,
         channel_id: Optional[str] = None,
+        thread_ts: Optional[str] = None,
 ) -> None:
     if channel_id is None:
         channel_id = await get_current_user_id()
-    log.info(f'Sending notification to channel {channel_id}: {text}')
 
+    log.info(f'Sending notification to channel {channel_id}: {text}')
     api = AsyncApis(metabot_client).metabot_api
-    resp = await api.request_api_slack_post(
+    await api.request_api_slack_post(
         SlackRequest(
             method='chat_postMessage',
             payload={
                 'text': text,
                 'channel': channel_id,
                 'blocks': blocks,
+                'thread_ts': thread_ts
             }
         )
     )
-    log.debug(resp.data)
 
 
-async def notify_admins(
+async def _notify_admins(
         metabot_client: ApiClient,
         date_from: date,
         date_to: date,
@@ -156,7 +156,7 @@ async def notify_admins(
             ]
         }
     ]
-    await send_notification(
+    await _send_notification(
         metabot_client,
         blocks[0]['text']['text'],
         blocks,
@@ -184,21 +184,19 @@ async def create_request(
         )
 
     request_id = str(
-        await save_request(
+        await _save_request(
             collection,
             date_from,
             date_to,
             reason
         )
     )
-
-    await send_notification(
+    await _send_notification(
         metabot_client,
         f'Leave request #`{request_id}` has been created! '
         f'You will be notified when your request is approved or denied.'
     )
-
-    await notify_admins(
+    await _notify_admins(
         metabot_client,
         date_from,
         date_to,
@@ -207,7 +205,7 @@ async def create_request(
     )
 
 
-def _generate_request_view() -> Dict:
+def _build_request_view() -> Dict:
     today = date.today().isoformat()
     blocks = [
         {
@@ -280,7 +278,7 @@ def _generate_request_view() -> Dict:
         'callback_id': REQUEST_VIEW_ID,
         'title': {
             'type': 'plain_text',
-            'text': 'Request a Leave',
+            'text': 'Request a leave',
             'emoji': True
         },
         'submit': {
@@ -303,19 +301,18 @@ async def open_request_view(metabot_client: ApiClient) -> None:
         raise ValueError('Must be called from command context')
 
     api = AsyncApis(metabot_client).metabot_api
-    resp = await api.request_api_slack_post(
+    await api.request_api_slack_post(
         SlackRequest(
             method='views_open',
             payload={
                 'trigger_id': metadata.trigger_id,
-                'view': _generate_request_view()
+                'view': _build_request_view()
             }
         )
     )
-    log.debug(resp.data)
 
 
-async def save_request(
+async def _save_request(
         collection: AsyncIOMotorCollection,
         date_from: date,
         date_to: date,
@@ -324,7 +321,6 @@ async def save_request(
     user = await get_current_user_id()
     datetime_from = datetime.combine(date_from, time.min)
     datetime_to = datetime.combine(date_to, time.min)
-
     result = await collection.insert_one({
         'user_id': user,
         'date_from': datetime_from,
@@ -358,7 +354,6 @@ async def process_request(
         status: str = 'approved'
 ) -> None:
     assert status in ('approved', 'denied')
-
     query = {'_id': ObjectId(request_id)}
     request = await collection.find_one(query)
     if request is None:
@@ -371,20 +366,28 @@ async def process_request(
             metabot_client,
             f'Request #`{request_id}` has already been processed.'
         )
+
     user = await get_current_user_id()
     await collection.update_one(query, {
         '$set': {'approval_status': status, 'admin_id': user}
     })
-    await send_notification(
+    await _send_notification(
         metabot_client,
         f'{APPROVAL_STATUSES[status]} '
         f'Your leave request #`{request_id}` has been {status} by <@{user}>.'
     )
-    await send_notification(
+
+    metadata = action_metadata.get()
+    if metadata is not None and metadata.container is not None:
+        thread_ts = metadata.container.get('message_ts')
+    else:
+        thread_ts = None
+    await _send_notification(
         metabot_client,
         f'{APPROVAL_STATUSES[status]} '
         f'Request #`{request_id}` has been {status} by <@{user}>.',
-        channel_id=ADMIN_CHANNEL
+        channel_id=ADMIN_CHANNEL,
+        thread_ts=thread_ts
     )
 
 
@@ -392,6 +395,7 @@ async def get_request_id_from_button() -> str:
     metadata = action_metadata.get()
     if not metadata or not metadata.actions:
         raise ValueError('Must be called from action context')
+
     request_id = metadata.actions[0]['value']
     return request_id
 
@@ -426,47 +430,52 @@ async def send_history(
     ]
     cursor = collection.find({'user_id': user}).sort('date_from', ASCENDING)
     async for request in cursor:
-        date_from = request['date_from'].date()
-        date_to = request['date_to'].date()
-        reason = request["reason"]
-        status = request['approval_status']
-        emoji = APPROVAL_STATUSES.get(status, '')
-        request_id = str(request['_id'])
-        blocks += [
-            {
-                'type': 'section',
-                'fields': [
-                    {
-                        'type': 'mrkdwn',
-                        'text': f'*Start:*\n{date_from.isoformat()}'
-                    },
-                    {
-                        'type': 'mrkdwn',
-                        'text': f'*End:*\n{date_to.isoformat()}'
-                    },
-                    {
-                        'type': 'mrkdwn',
-                        'text': f'*Reason:*\n{reason}'
-                    },
-                    {
-                        'type': 'mrkdwn',
-                        'text': f'*Status:*\n{emoji} {status.capitalize()}'
-                    },
-                ]
-            },
-            {
-                'type': 'context',
-                'elements': [
-                    {
-                        'type': 'mrkdwn',
-                        'text': f'Request #`{request_id}`'
-                    }
-                ]
-            },
-            DIVIDER
-        ]
+        blocks += _build_history_blocks(request)
     await send_ephemeral(
         metabot_client,
         blocks[0]['text']['text'],
         blocks
     )
+
+
+def _build_history_blocks(request: Dict) -> List[Dict]:
+    date_from = request['date_from'].date()
+    date_to = request['date_to'].date()
+    reason = request["reason"]
+    status = request['approval_status']
+    emoji = APPROVAL_STATUSES.get(status, '')
+    request_id = str(request['_id'])
+    blocks = [
+        {
+            'type': 'section',
+            'fields': [
+                {
+                    'type': 'mrkdwn',
+                    'text': f'*Start:*\n{date_from.isoformat()}'
+                },
+                {
+                    'type': 'mrkdwn',
+                    'text': f'*End:*\n{date_to.isoformat()}'
+                },
+                {
+                    'type': 'mrkdwn',
+                    'text': f'*Reason:*\n{reason}'
+                },
+                {
+                    'type': 'mrkdwn',
+                    'text': f'*Status:*\n{emoji} {status.capitalize()}'
+                },
+            ]
+        },
+        {
+            'type': 'context',
+            'elements': [
+                {
+                    'type': 'mrkdwn',
+                    'text': f'Request #`{request_id}`'
+                }
+            ]
+        },
+        DIVIDER
+    ]
+    return blocks

@@ -24,10 +24,13 @@ class ActionDispatcher:
         self.storage = app.state.storage
 
     async def dispatch(self, payload: Dict[str, Any]) -> None:
-        action_ids = [
-            f'{payload["type"]}:{action["action_id"]}'
-            for action in payload.get('actions', []) or []
-        ]
+        action_ids = []
+
+        if actions := payload.get('actions'):
+            action_ids += [
+                f'{payload["type"]}:{action["action_id"]}'
+                for action in actions
+            ]
 
         if action_callback_id := payload.get('callback_id'):
             action_ids.append(f'{payload["type"]}:{action_callback_id}')

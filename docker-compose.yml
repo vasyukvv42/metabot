@@ -10,7 +10,7 @@ services:
       - 6379
 
   mongo:
-    image: mongo:4.2.5
+    image: 'mongo:4.2.5'
     restart: always
     volumes:
       - mongodb:/data/db
@@ -21,17 +21,17 @@ services:
 
   metabot:
     build:
-      context: .
-      dockerfile: metabot.dockerfile
+      context: metabot
+      dockerfile: Dockerfile
       target: dev
     restart: unless-stopped
     volumes:
-      - './metabot:/app/metabot'
+      - './metabot:/app'
     ports:
       - 8000:8000
     depends_on:
       - redis
-    env_file: .env
+    env_file: metabot/.env
 
   # METABOT MODULES
 
@@ -60,6 +60,19 @@ services:
       - mongo
     env_file: modules/vacations/.env
 
+  feedback:
+    build:
+      context: modules/feedback
+      dockerfile: Dockerfile
+      target: dev
+    restart: unless-stopped
+    volumes:
+      - './modules/feedback:/app'
+    depends_on:
+      - metabot
+      - mongo
+    env_file: modules/feedback/.env
+
   # LINT & TYPE CHECKING
 
   lint:
@@ -79,7 +92,7 @@ services:
 
   mypy:
     image: 'metabot_lint'
-    command: mypy metabot fastapi-metabot modules/help modules/vacations
+    command: mypy metabot fastapi-metabot modules/help modules/vacations modules/feedback
     volumes:
       - type: bind
         source: .

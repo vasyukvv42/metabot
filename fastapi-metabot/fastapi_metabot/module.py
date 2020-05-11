@@ -252,7 +252,6 @@ class Module:
                         async_api.metabot_api.
                         register_module_api_modules_post(module)
                     )
-                    log.debug('Heartbeat to metabot server was successful')
                 except ApiException:
                     log.exception('Heartbeat to metabot server has failed')
 

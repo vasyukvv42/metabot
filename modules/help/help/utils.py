@@ -108,7 +108,7 @@ async def generate_module_help(
                 'text': {
                     'type': 'mrkdwn',
                     'text': f'{full_command}\n'
-                            f'{description}\n'
+                            f'{description}\n\n'
                             f'{arguments_long}'
                 }
             },

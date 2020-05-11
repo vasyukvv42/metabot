@@ -176,7 +176,10 @@ class Module:
     ) -> None:
         command = self._commands[name]
         converted_args = {
-            arg.name: self._get_converter(arg.type)(value)
+            arg.name: await self._maybe_await(
+                self._get_converter(arg.type),
+                value
+            )
             for arg in command.arguments
             if (value := arguments.get(arg.name))
         }
@@ -194,8 +197,8 @@ class Module:
     @staticmethod
     async def _maybe_await(
             function: Callable,
-            *args: List,
-            **kwargs: Dict
+            *args: Any,
+            **kwargs: Any
     ) -> Any:
         if iscoroutinefunction(function):
             return await function(*args, **kwargs)

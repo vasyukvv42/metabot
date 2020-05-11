@@ -7,7 +7,7 @@
 certifi==2020.4.5.1       # via fastapi-metabot, httpx
 chardet==3.0.4            # via fastapi-metabot, httpx
 click==7.1.2              # via uvicorn
-fastapi-metabot==0.2.0    # via -r modules/vacations/requirements.in
+fastapi-metabot==0.2.1    # via -r modules/vacations/requirements.in
 fastapi==0.54.1           # via fastapi-metabot
 h11==0.9.0                # via fastapi-metabot, httpx, uvicorn
 h2==3.2.0                 # via fastapi-metabot, httpx

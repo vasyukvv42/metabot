@@ -2,7 +2,7 @@ import logging
 
 from fastapi import FastAPI
 
-from help.config import MODULE_URL, METABOT_URL, MODULE_HELP_ACTION
+from help.config import MODULE_URL, METABOT_URL, COMMANDS_BUTTON_ACTION_ID
 from fastapi_metabot.module import Module
 from help.utils import (
     generate_default_help,
@@ -51,7 +51,7 @@ async def get_help(module_name: str = None) -> None:
     )
 
 
-@module.action(MODULE_HELP_ACTION)
+@module.action(COMMANDS_BUTTON_ACTION_ID)
 async def module_help_action() -> None:
     module_name = await get_module_name_from_button()
     blocks = await generate_module_help(

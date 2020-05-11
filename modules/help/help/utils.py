@@ -1,7 +1,7 @@
 import logging
 from typing import Dict, List, Iterable, Optional
 
-from help.config import MODULE_HELP_ACTION
+from help.config import COMMANDS_BUTTON_ACTION_ID
 from fastapi_metabot.client import ApiClient, AsyncApis
 from fastapi_metabot.client.models import Module, SlackRequest
 from fastapi_metabot.utils import (
@@ -127,7 +127,7 @@ def _module_blocks(module: Module, add_button: bool = False) -> List[Dict]:
     }
     if add_button:
         module_section['accessory'] = {
-            'action_id': MODULE_HELP_ACTION,
+            'action_id': COMMANDS_BUTTON_ACTION_ID,
             'type': 'button',
             'text': {
                 'type': 'plain_text',

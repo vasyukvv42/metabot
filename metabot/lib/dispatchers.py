@@ -26,7 +26,7 @@ class ActionDispatcher:
     async def dispatch(self, payload: Dict[str, Any]) -> None:
         action_ids = [
             f'{payload["type"]}:{action["action_id"]}'
-            for action in payload.get('actions', [])
+            for action in payload.get('actions', []) or []
         ]
 
         if action_callback_id := payload.get('callback_id'):

@@ -7,7 +7,7 @@ app = FastAPI()
 
 module = Module(
     name='vacations',
-    description='Manage vacations, days off & other leaves',
+    description=':palm_tree: Manage vacations, days off & other leaves',
     module_url=MODULE_URL,
     metabot_url=METABOT_URL,
 )

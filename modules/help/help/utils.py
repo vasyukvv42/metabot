@@ -3,7 +3,7 @@ from typing import Dict, List, Iterable, Optional
 
 from help.config import MODULE_HELP_ACTION
 from fastapi_metabot.client import ApiClient, AsyncApis
-from fastapi_metabot.client.models import Module, Message
+from fastapi_metabot.client.models import Module, SlackRequest
 from fastapi_metabot.utils import (
     get_current_user_id,
     get_current_channel_id,
@@ -44,15 +44,18 @@ async def send_message_to_user(
         blocks: Optional[List[Dict]] = None
 ) -> None:
     api = AsyncApis(metabot_client).metabot_api
-    await api.send_message_api_chat_post(
-        Message(
-            text=text,
-            blocks=blocks,
-            user_id=await get_current_user_id(),
-            channel_id=await get_current_channel_id(),
-            send_ephemeral=True
+    resp = await api.request_api_slack_post(
+        SlackRequest(
+            method='chat_postEphemeral',
+            payload={
+                'text': text,
+                'blocks': blocks,
+                'user': await get_current_user_id(),
+                'channel': await get_current_channel_id()
+            }
         )
     )
+    log.debug(resp.data)
 
 
 async def generate_default_help(metabot_client: ApiClient) -> List[Dict]:

@@ -16,7 +16,7 @@ app = FastAPI()
 
 module = Module(
     name='help',
-    description='Get info about installed MetaBot modules and commands',
+    description=':sos: Get info about installed MetaBot modules and commands',
     module_url=MODULE_URL,
     metabot_url=METABOT_URL,
 )

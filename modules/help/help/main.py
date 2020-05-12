@@ -4,12 +4,7 @@ from fastapi import FastAPI
 
 from help.config import MODULE_URL, METABOT_URL, COMMANDS_BUTTON_ACTION_ID
 from fastapi_metabot.module import Module
-from help.utils import (
-    generate_default_help,
-    generate_module_help,
-    send_message_to_user,
-    get_module_name_from_button
-)
+from help.bl import get_module_name_from_button, send_help
 
 log = logging.getLogger(__name__)
 app = FastAPI()
@@ -32,37 +27,13 @@ module = Module(
     }
 )
 async def get_help(module_name: str = None) -> None:
-    if module_name is None:
-        blocks = await generate_default_help(module.metabot_client)
-    else:
-        try:
-            blocks = await generate_module_help(
-                module.metabot_client,
-                module_name
-            )
-        except Exception:  # noqa
-            log.exception('Help generation failed, sending default help')
-            return await get_help()
-
-    await send_message_to_user(
-        module.metabot_client,
-        blocks[0]['text']['text'],
-        blocks
-    )
+    await send_help(module.metabot_client, module_name)
 
 
 @module.action(COMMANDS_BUTTON_ACTION_ID)
 async def module_help_action() -> None:
     module_name = await get_module_name_from_button()
-    blocks = await generate_module_help(
-        module.metabot_client,
-        module_name,
-        False
-    )
-    await send_message_to_user(
-        module.metabot_client,
-        blocks[0]['text']['text'],
-        blocks
-    )
+    await send_help(module.metabot_client, module_name)
+
 
 module.install(app)

@@ -1,9 +1,21 @@
 from fastapi import FastAPI
 
 from fastapi_metabot.module import Module
-from feedback.config import MODULE_URL, METABOT_URL, MAX_QUESTIONS
+from feedback.config import (
+    MODULE_URL,
+    METABOT_URL,
+    MAX_QUESTIONS,
+    CREATION_VIEW_ID, NOTIFY_ACTION_ID
+)
 from feedback.event_handlers import start_app_handler, stop_app_handler
-from feedback.utils import open_creation_view, send_ephemeral
+from feedback.bl import (
+    open_creation_view,
+    send_ephemeral,
+    parse_creation_view,
+    create_questionnaire,
+    get_q_id_from_button,
+    notify_recipients
+)
 
 app = FastAPI()
 app.add_event_handler('startup', start_app_handler(app))
@@ -34,6 +46,24 @@ async def create(num_of_questions: int = 1) -> None:
         )
 
     await open_creation_view(module.metabot_client, num_of_questions)
+
+
+@module.view(CREATION_VIEW_ID)
+async def creation_view() -> None:
+    title, recipients, questions = await parse_creation_view()
+    await create_questionnaire(
+        app.state.feedback,
+        module.metabot_client,
+        title,
+        recipients,
+        questions
+    )
+
+
+@module.action(NOTIFY_ACTION_ID)
+async def notify() -> None:
+    q_id = await get_q_id_from_button()
+    await notify_recipients(app.state.feedback, module.metabot_client, q_id)
 
 
 module.install(app)

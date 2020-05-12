@@ -12,10 +12,10 @@ from vacations.config import (
     DENY_BUTTON_ACTION_ID
 )
 from vacations.event_handlers import start_app_handler, stop_app_handler
-from vacations.utils import (
+from vacations.bl import (
     send_ephemeral,
     open_request_view,
-    parse_view,
+    parse_request_view,
     process_request,
     get_request_id_from_button,
     is_admin_channel,
@@ -156,7 +156,7 @@ async def history(user: UserId = None) -> None:
 
 @module.view(REQUEST_VIEW_ID)
 async def request_view() -> None:
-    date_from, date_to, reason = await parse_view()
+    date_from, date_to, reason = await parse_request_view()
     await create_request(
         module.metabot_client,
         app.state.history,

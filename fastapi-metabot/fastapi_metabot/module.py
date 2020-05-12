@@ -239,8 +239,8 @@ class Module:
                 ) for arg in command.arguments],
             ) for command in self._commands.values()},
             actions=(
-                [f'block_actions:{action}' for action in self._actions] +
-                [f'view_submission:{view}' for view in self._views]
+                [f'block_actions:{action}' for action in self._actions]
+                + [f'view_submission:{view}' for view in self._views]
             )
         )
         async_api = AsyncApis(self.metabot_client)

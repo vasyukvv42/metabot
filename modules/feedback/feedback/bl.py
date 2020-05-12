@@ -15,17 +15,22 @@ from fastapi_metabot.utils import (
 from feedback.builders import (
     build_creation_view,
     build_control_message,
-    build_answer_message, build_answer_view, build_submitted_feedback_message
+    build_answer_message,
+    build_answer_view,
+    build_submitted_feedback_message
 )
 from feedback.config import (
     QUESTION_INPUT_ACTION_ID,
     RECIPIENTS_SELECT_ACTION_ID,
-    TITLE_INPUT_ACTION_ID, MAX_QUESTIONS, ANSWER_INPUT_ACTION_ID
+    TITLE_INPUT_ACTION_ID,
+    MAX_QUESTIONS,
+    ANSWER_INPUT_ACTION_ID
 )
 from feedback.db import (
     save_questionnaire,
     update_questionnaire_ts,
-    get_questionnaire_by_id, update_questionnaire_answers
+    get_questionnaire_by_id,
+    update_questionnaire_answers
 )
 
 log = logging.getLogger(__name__)

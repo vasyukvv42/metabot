@@ -227,12 +227,14 @@ def build_submitted_feedback_message(
         }
     ]
     for q, a in zip(questions, answers):
-        blocks.append(DIVIDER)
-        blocks.append({
-            'type': 'section',
-            'text': {
-                'type': 'mrkdwn',
-                'text': f'*Q:* {q}\n*A:* {a}'
+        blocks += [
+            DIVIDER,
+            {
+                'type': 'section',
+                'text': {
+                    'type': 'mrkdwn',
+                    'text': f'*Q:* {q}\n*A:* {a}'
+                }
             }
-        })
+        ]
     return blocks

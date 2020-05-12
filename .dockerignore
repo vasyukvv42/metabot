@@ -29,7 +29,6 @@ venv/
 .idea
 LICENSE
 README.md
-spaceport.json
 .DS_Store
 tunnel.sh
 .env

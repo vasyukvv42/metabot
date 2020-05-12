@@ -12,3 +12,4 @@ tunnel.sh
 build
 dist
 *.egg-info
+k8s

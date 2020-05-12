@@ -8,7 +8,7 @@ COPY requirements.txt .
 RUN pip install --upgrade pip \
  && pip install -r requirements.txt --no-deps --no-cache-dir
 
-COPY . .
+COPY vacations ./vacations
 EXPOSE 8000
 
 CMD ["uvicorn", "vacations.main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"]

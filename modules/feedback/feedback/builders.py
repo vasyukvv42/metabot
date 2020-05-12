@@ -6,7 +6,7 @@ from feedback.config import (
     CREATION_VIEW_ID,
     QUESTION_INPUT_ACTION_ID,
     NOTIFY_ACTION_ID,
-    ANSWER_ACTION_ID
+    ANSWER_ACTION_ID, ANSWER_VIEW_ID, ANSWER_INPUT_ACTION_ID
 )
 
 DIVIDER = {
@@ -59,6 +59,45 @@ def build_creation_view(num_of_questions: int) -> Dict:
         'title': {
             'type': 'plain_text',
             'text': 'Create a questionnaire',
+            'emoji': True
+        },
+        'submit': {
+            'type': 'plain_text',
+            'text': 'Submit',
+            'emoji': True
+        },
+        'close': {
+            'type': 'plain_text',
+            'text': 'Cancel',
+            'emoji': True
+        },
+        'blocks': blocks
+    }
+
+
+def build_answer_view(title: str, questions: List[str], q_id: str) -> Dict:
+    blocks = [{
+        'type': 'input',
+        'block_id': f'answer_{num}',
+        'element': {
+            'type': 'plain_text_input',
+            'action_id': ANSWER_INPUT_ACTION_ID.format(num),
+            'multiline': True
+        },
+        'label': {
+            'type': 'plain_text',
+            'text': question,
+            'emoji': True
+        }
+    } for num, question in enumerate(questions, start=1)]
+
+    return {
+        'type': 'modal',
+        'callback_id': ANSWER_VIEW_ID,
+        'private_metadata': q_id,
+        'title': {
+            'type': 'plain_text',
+            'text': title,
             'emoji': True
         },
         'submit': {
@@ -171,3 +210,29 @@ def build_answer_message(author: str, q_id: str, title: str) -> List[Dict]:
             }
         }
     ]
+
+
+def build_submitted_feedback_message(
+        author: str,
+        questions: List[str],
+        answers: List[str]
+) -> List[Dict]:
+    blocks: List[Dict] = [
+        {
+            'type': 'section',
+            'text': {
+                'type': 'mrkdwn',
+                'text': f'<@{author}> has submitted feedback!'
+            }
+        }
+    ]
+    for q, a in zip(questions, answers):
+        blocks.append(DIVIDER)
+        blocks.append({
+            'type': 'section',
+            'text': {
+                'type': 'mrkdwn',
+                'text': f'*Q:* {q}\n*A:* {a}'
+            }
+        })
+    return blocks

@@ -107,6 +107,9 @@ async def create_request(
         date_to: Optional[date],
         reason: str,
 ) -> None:
+    user = await get_current_user_id()
+    assert user is not None, 'Must be called from any Slack context'
+
     if date_to is None:
         date_to = date_from
 
@@ -119,8 +122,6 @@ async def create_request(
             'Start date of your leave must be today or in the future.'
         )
 
-    user = await get_current_user_id()
-    assert user is not None, 'Must be called from any Slack context'
     request_id = await save_request(
         collection,
         date_from,
@@ -144,8 +145,7 @@ async def create_request(
 
 async def open_request_view(metabot_client: ApiClient) -> None:
     metadata = command_metadata.get()
-    if metadata is None:
-        raise ValueError('Must be called from command context')
+    assert metadata is not None, 'Must be called from command context'
 
     api = AsyncApis(metabot_client).metabot_api
     await api.request_api_slack_post(

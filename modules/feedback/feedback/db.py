@@ -2,6 +2,7 @@ from typing import List, Optional, Dict
 
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorCollection  # noqa
+from pymongo import ReturnDocument
 
 
 async def save_questionnaire(
@@ -39,3 +40,16 @@ async def get_questionnaire_by_id(
 ) -> Optional[Dict]:
     questionnaire = await collection.find_one({'_id': ObjectId(q_id)})
     return questionnaire
+
+
+async def update_questionnaire_answers(
+        collection: AsyncIOMotorCollection,
+        q_id: str,
+        user_id: str,
+        answers: List[str]
+) -> Dict:
+    return await collection.find_one_and_update(
+        {'_id': ObjectId(q_id)},
+        {'$set': {f'answers.{user_id}': answers}},
+        return_document=ReturnDocument.AFTER
+    )

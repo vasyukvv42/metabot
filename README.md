@@ -8,10 +8,12 @@ add new functionality (commands, interactive components & modals) via modules.
 **Step 2:** create `example.py`
 ```python
 from fastapi import FastAPI
-from fastapi_metabot.client import AsyncApis
-from fastapi_metabot.client.models import SlackRequest
 from fastapi_metabot.module import Module
-from fastapi_metabot.utils import command_metadata, action_metadata
+from fastapi_metabot.utils import (
+    command_metadata, 
+    action_metadata, 
+    async_slack_request
+)
 
 app = FastAPI()
 
@@ -32,16 +34,12 @@ async def test(param: int, optional: str = 'default') -> None:
     print(type(param))  # <class 'int'>
 
     # you can access any Slack API method via the client
-    # client was auto-generated via fastapi_client because I'm lazy
-    api = AsyncApis(module.metabot_client).metabot_api
-    await api.request_api_slack_post(
-        SlackRequest(
-            method='chat_postMessage',
-            payload={
-                'text': 'Hello, World!',
-                'channel': '#general'
-            }
-        )
+    await async_slack_request(
+        method='chat_postMessage',
+        payload={
+            'text': 'Hello, World!',
+            'channel': '#general'
+        }
     )
 
     # Slack command/action payloads are stored inside contextvars
@@ -49,17 +47,17 @@ async def test(param: int, optional: str = 'default') -> None:
     print(payload.user_name)  # current user's name
 
 
-# this is called when someone triggers an interactive component
 # note that action and view ids must be unique across ALL modules
 @module.action('action_id')
 async def action() -> None:
+    # this is called when someone triggers an interactive component
     payload = action_metadata.get()
     print(payload.actions)
 
 
-# this is called when someone submits a modal
 @module.view('callback_id')
-async def action() -> None:
+async def view() -> None:
+    # this is called when someone submits a modal
     payload = action_metadata.get()
     print(payload.view)
 

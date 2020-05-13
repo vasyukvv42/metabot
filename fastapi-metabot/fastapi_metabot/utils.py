@@ -1,6 +1,9 @@
 # flake8: noqa
 from contextvars import ContextVar
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, Dict
+
+from fastapi_metabot.client import SyncApis, AsyncApis
+from fastapi_metabot.client.models import SlackResponse, SlackRequest
 
 if TYPE_CHECKING:
     from fastapi_metabot.models import CommandMetadata, ActionMetadata  # noqa
@@ -23,7 +26,7 @@ current_module: ContextVar[Optional['Module']] = ContextVar(
 )
 
 
-async def get_current_user_id() -> Optional[str]:
+def get_current_user_id() -> Optional[str]:
     if c := command_metadata.get():
         return c.user_id
     elif a := action_metadata.get():
@@ -32,10 +35,38 @@ async def get_current_user_id() -> Optional[str]:
     return None
 
 
-async def get_current_channel_id() -> Optional[str]:
+def get_current_channel_id() -> Optional[str]:
     if c := command_metadata.get():
         return c.channel_id
     elif a := action_metadata.get():
         channel = a.channel or {}
         return channel.get('id')
     return None
+
+
+def slack_request(method: str, payload: Dict) -> Dict:
+    module = current_module.get()
+    assert module is not None, 'Must be called from any Slack context'
+
+    api = SyncApis(module.metabot_client).metabot_api
+    resp = api.request_api_slack_post(
+        SlackRequest(
+            method=method,
+            payload=payload
+        )
+    )
+    return resp.data
+
+
+async def async_slack_request(method: str, payload: Dict) -> Dict:
+    module = current_module.get()
+    assert module is not None, 'Must be called from any Slack context'
+
+    api = AsyncApis(module.metabot_client).metabot_api
+    resp = await api.request_api_slack_post(
+        SlackRequest(
+            method=method,
+            payload=payload
+        )
+    )
+    return resp.data

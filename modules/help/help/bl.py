@@ -3,11 +3,11 @@ from typing import Dict, List, Iterable, Optional
 
 from help.builders import build_default_help, build_module_help
 from fastapi_metabot.client import ApiClient, AsyncApis
-from fastapi_metabot.client.models import Module, SlackRequest
+from fastapi_metabot.client.models import Module
 from fastapi_metabot.utils import (
     get_current_user_id,
     get_current_channel_id,
-    action_metadata
+    action_metadata, async_slack_request
 )
 
 log = logging.getLogger(__name__)
@@ -28,7 +28,6 @@ async def send_help(
         return await send_help(metabot_client)
 
     await _send_message_to_user(
-        metabot_client,
         blocks[0]['text']['text'],
         blocks
     )
@@ -38,7 +37,6 @@ async def _send_default_help(metabot_client: ApiClient) -> None:
     modules = await _get_all_modules(metabot_client)
     blocks = build_default_help(modules)
     await _send_message_to_user(
-        metabot_client,
         blocks[0]['text']['text'],
         blocks
     )
@@ -66,19 +64,15 @@ async def _get_all_modules(metabot_client: ApiClient) -> Iterable[Module]:
 
 
 async def _send_message_to_user(
-        metabot_client: ApiClient,
         text: str,
         blocks: Optional[List[Dict]] = None
 ) -> None:
-    api = AsyncApis(metabot_client).metabot_api
-    await api.request_api_slack_post(
-        SlackRequest(
-            method='chat_postEphemeral',
-            payload={
-                'text': text,
-                'blocks': blocks,
-                'user': await get_current_user_id(),
-                'channel': await get_current_channel_id()
-            }
-        )
+    await async_slack_request(
+        method='chat_postEphemeral',
+        payload={
+            'text': text,
+            'blocks': blocks,
+            'user': get_current_user_id(),
+            'channel': get_current_channel_id()
+        }
     )

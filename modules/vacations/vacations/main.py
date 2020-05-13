@@ -44,10 +44,7 @@ async def convert_user_id(user_id: str) -> UserId:
     if user_id_search:
         return user_id_search.group(1)
     else:
-        await send_ephemeral(
-            module.metabot_client,
-            f'Invalid user mention: `{user_id}`'
-        )
+        await send_ephemeral(f'Invalid user mention: `{user_id}`')
         raise ValueError('Invalid UserId')
 
 
@@ -56,10 +53,7 @@ async def convert_date(iso_date: str) -> date:
     try:
         return date.fromisoformat(iso_date)
     except ValueError as e:
-        await send_ephemeral(
-            module.metabot_client,
-            f'Invalid date format: `{iso_date}`'
-        )
+        await send_ephemeral(f'Invalid date format: `{iso_date}`')
         raise e
 
 
@@ -81,10 +75,9 @@ async def request(
         reason: str = 'Vacation',
 ) -> None:
     if date_from is None:
-        return await open_request_view(module.metabot_client)
+        return await open_request_view()
 
     await create_request(
-        module.metabot_client,
         app.state.history,
         date_from,
         date_to,
@@ -104,13 +97,11 @@ async def request(
 async def approve(request_id: str) -> None:
     if not await is_admin_channel():
         return await send_ephemeral(
-            module.metabot_client,
             'This command is available only in the admin channel.'
         )
 
     await process_request(
         app.state.history,
-        module.metabot_client,
         request_id,
         'approved',
     )
@@ -128,13 +119,11 @@ async def approve(request_id: str) -> None:
 async def deny(request_id: str) -> None:
     if not await is_admin_channel():
         return await send_ephemeral(
-            module.metabot_client,
             'This command is available only in the admin channel.'
         )
 
     await process_request(
         app.state.history,
-        module.metabot_client,
         request_id,
         'denied',
     )
@@ -151,14 +140,13 @@ async def deny(request_id: str) -> None:
     }
 )
 async def history(user: UserId = None) -> None:
-    await send_history(app.state.history, module.metabot_client, user)
+    await send_history(app.state.history, user)
 
 
 @module.view(REQUEST_VIEW_ID)
 async def request_view() -> None:
     date_from, date_to, reason = await parse_request_view()
     await create_request(
-        module.metabot_client,
         app.state.history,
         date_from,
         date_to,
@@ -170,14 +158,12 @@ async def request_view() -> None:
 async def approve_button_action() -> None:
     if not await is_admin_channel():
         return await send_ephemeral(
-            module.metabot_client,
             'This command is available only in the admin channel.'
         )
 
     request_id = await get_request_id_from_button()
     await process_request(
         app.state.history,
-        module.metabot_client,
         request_id,
         'approved'
     )
@@ -187,14 +173,12 @@ async def approve_button_action() -> None:
 async def deny_button_action() -> None:
     if not await is_admin_channel():
         return await send_ephemeral(
-            module.metabot_client,
             'This command is available only in the admin channel.'
         )
 
     request_id = await get_request_id_from_button()
     await process_request(
         app.state.history,
-        module.metabot_client,
         request_id,
         'denied',
     )

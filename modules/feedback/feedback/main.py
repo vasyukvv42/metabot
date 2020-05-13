@@ -18,7 +18,9 @@ from feedback.bl import (
     create_questionnaire,
     get_q_id_from_button,
     notify_recipients,
-    open_answer_view, parse_answer_view, submit_answers
+    open_answer_view,
+    parse_answer_view,
+    submit_answers
 )
 
 app = FastAPI()
@@ -45,11 +47,10 @@ module = Module(
 async def create(num_of_questions: int = 1) -> None:
     if not 1 <= num_of_questions <= MAX_QUESTIONS:
         return await send_ephemeral(
-            module.metabot_client,
             f'Number of questions must be between 1 and {MAX_QUESTIONS}'
         )
 
-    await open_creation_view(module.metabot_client, num_of_questions)
+    await open_creation_view(num_of_questions)
 
 
 @module.view(CREATION_VIEW_ID)
@@ -57,7 +58,6 @@ async def creation_view() -> None:
     title, recipients, questions = await parse_creation_view()
     await create_questionnaire(
         app.state.feedback,
-        module.metabot_client,
         title,
         recipients,
         questions
@@ -69,7 +69,6 @@ async def answer_view() -> None:
     q_id, answers = await parse_answer_view()
     await submit_answers(
         app.state.feedback,
-        module.metabot_client,
         q_id,
         answers
     )
@@ -78,13 +77,13 @@ async def answer_view() -> None:
 @module.action(NOTIFY_ACTION_ID)
 async def notify() -> None:
     q_id = await get_q_id_from_button()
-    await notify_recipients(app.state.feedback, module.metabot_client, q_id)
+    await notify_recipients(app.state.feedback, q_id)
 
 
 @module.action(ANSWER_ACTION_ID)
 async def answer() -> None:
     q_id = await get_q_id_from_button()
-    await open_answer_view(app.state.feedback, module.metabot_client, q_id)
+    await open_answer_view(app.state.feedback, q_id)
 
 
 module.install(app)

@@ -9,7 +9,8 @@ from vacations.config import (
     METABOT_URL,
     REQUEST_VIEW_ID,
     APPROVE_BUTTON_ACTION_ID,
-    DENY_BUTTON_ACTION_ID
+    DENY_BUTTON_ACTION_ID,
+    VACATION_TYPES
 )
 from vacations.event_handlers import start_app_handler, stop_app_handler
 from vacations.bl import (
@@ -63,6 +64,8 @@ async def convert_date(iso_date: str) -> date:
                 'If no arguments are provided, opens a dialog with a form to '
                 'fill out your request.',
     arg_descriptions={
+        'request_type': f'Type of your request '
+                        f'(one of `{"` `".join(VACATION_TYPES)}`)',
         'date_from': 'The day you want to start your leave (e.g. `2020-10-29`)',
         'date_to': 'End date of your leave (e.g. `2020-10-31`)',
         'reason': 'Reason for your leave '
@@ -70,15 +73,17 @@ async def convert_date(iso_date: str) -> date:
     }
 )
 async def request(
+        request_type: str = None,
         date_from: date = None,
         date_to: date = None,
-        reason: str = 'Vacation',
+        reason: str = '',
 ) -> None:
-    if date_from is None:
+    if request_type is None:
         return await open_request_view()
 
     await create_request(
         app.state.history,
+        request_type,
         date_from,
         date_to,
         reason
@@ -145,9 +150,10 @@ async def history(user: UserId = None) -> None:
 
 @module.view(REQUEST_VIEW_ID)
 async def request_view() -> None:
-    date_from, date_to, reason = await parse_request_view()
+    request_type, date_from, date_to, reason = await parse_request_view()
     await create_request(
         app.state.history,
+        request_type,
         date_from,
         date_to,
         reason

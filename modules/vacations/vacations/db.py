@@ -7,7 +7,8 @@ from pymongo import ASCENDING
 
 
 async def save_request(
-        collection: AsyncIOMotorCollection,
+        history: AsyncIOMotorCollection,
+        request_type: str,
         date_from: date,
         date_to: date,
         reason: str,
@@ -15,8 +16,9 @@ async def save_request(
 ) -> str:
     datetime_from = datetime.combine(date_from, time.min)
     datetime_to = datetime.combine(date_to, time.min)
-    result = await collection.insert_one({
+    result = await history.insert_one({
         'user_id': user_id,
+        'type': request_type,
         'date_from': datetime_from,
         'date_to': datetime_to,
         'reason': reason,
@@ -26,30 +28,30 @@ async def save_request(
 
 
 async def update_request_status(
-        collection: AsyncIOMotorCollection,
+        history: AsyncIOMotorCollection,
         request_id: str,
         status: str,
         admin_id: str
 ) -> None:
-    await collection.update_one({'_id': ObjectId(request_id)}, {
+    await history.update_one({'_id': ObjectId(request_id)}, {
         '$set': {'approval_status': status, 'admin_id': admin_id}
     })
 
 
 async def get_request_by_id(
-        collection: AsyncIOMotorCollection,
+        history: AsyncIOMotorCollection,
         request_id: str
 ) -> Dict:
-    request = await collection.find_one({'_id': ObjectId(request_id)})
+    request = await history.find_one({'_id': ObjectId(request_id)})
     return request
 
 
 async def get_request_history_by_user_id(
-        collection: AsyncIOMotorCollection,
+        history: AsyncIOMotorCollection,
         user_id: str
 ) -> List[Dict]:
     return await (
-        collection
+        history
         .find({'user_id': user_id})
         .sort('date_from', ASCENDING)
         .to_list(None)

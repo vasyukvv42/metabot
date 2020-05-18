@@ -23,7 +23,8 @@ SAMPLE_MODULE = {
                 },
             ]
         }
-    }
+    },
+    'actions': [],
 }
 
 

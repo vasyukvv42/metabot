@@ -5,7 +5,8 @@ from motor.motor_asyncio import AsyncIOMotorClient
 
 from vacations.config import (
     MONGODB_URI,
-    HISTORY_COLLECTION
+    HISTORY_COLLECTION,
+    USERS_COLLECTION,
 )
 
 
@@ -14,6 +15,7 @@ def start_app_handler(app: FastAPI) -> Callable:
         app.state.motor = AsyncIOMotorClient(MONGODB_URI)
         db = app.state.motor.get_default_database()
         app.state.history = db[HISTORY_COLLECTION]
+        app.state.users = db[USERS_COLLECTION]
 
     return startup
 

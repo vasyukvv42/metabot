@@ -7,7 +7,7 @@ from vacations.config import (
     DATEPICKER_START_ACTION_ID,
     DATEPICKER_END_ACTION_ID,
     REASON_INPUT_ACTION_ID,
-    REQUEST_VIEW_ID
+    REQUEST_VIEW_ID, VACATION_TYPES, VACATION_TYPE_ACTION_ID
 )
 
 STATUS_EMOJIS = {
@@ -22,6 +22,7 @@ DIVIDER = {
 
 
 def build_admin_request_notification(
+        request_type: str,
         date_from: date,
         date_to: date,
         reason: str,
@@ -46,15 +47,16 @@ def build_admin_request_notification(
                 {
                     'type': 'mrkdwn',
                     'text': f'*End:*\n{date_to.isoformat()}'
+                },
+                {
+                    'type': 'mrkdwn',
+                    'text': f'*Type:*\n{request_type}'
+                },
+                {
+                    'type': 'mrkdwn',
+                    'text': f'*Reason:*\n{reason}'
                 }
             ]
-        },
-        {
-            'type': 'section',
-            'text': {
-                'type': 'mrkdwn',
-                'text': f'*Reason:*\n{reason}'
-            }
         },
         {
             'type': 'context',
@@ -98,6 +100,34 @@ def build_admin_request_notification(
 def build_request_view() -> Dict:
     today = date.today().isoformat()
     blocks = [
+        {
+            'type': 'input',
+            'block_id': 'type',
+            'element': {
+                'type': 'static_select',
+                'action_id': VACATION_TYPE_ACTION_ID,
+                'placeholder': {
+                    'type': 'plain_text',
+                    'text': 'Select an item',
+                    'emoji': True
+                },
+                'options': [
+                    {
+                        'text': {
+                            'type': 'plain_text',
+                            'text': type_.capitalize(),
+                            'emoji': True
+                        },
+                        'value': type_
+                    } for type_ in VACATION_TYPES
+                ]
+            },
+            'label': {
+                'type': 'plain_text',
+                'text': 'Leave Type',
+                'emoji': True
+            }
+        },
         {
             'type': 'input',
             'block_id': 'start',

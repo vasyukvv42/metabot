@@ -21,7 +21,7 @@ from vacations.config import (
     DATEPICKER_START_ACTION_ID,
     DATEPICKER_END_ACTION_ID,
     REASON_INPUT_ACTION_ID,
-    ADMIN_CHANNEL
+    ADMIN_CHANNEL, VACATION_TYPES, VACATION_TYPE_ACTION_ID
 )
 from vacations.db import (
     save_request,
@@ -72,6 +72,7 @@ async def _send_notification(
 
 
 async def _notify_admins(
+        request_type: str,
         date_from: date,
         date_to: date,
         reason: str,
@@ -80,7 +81,7 @@ async def _notify_admins(
     user = get_current_user_id()
     assert user is not None, 'Must be called from any Slack context'
     blocks = build_admin_request_notification(
-        date_from, date_to, reason, request_id, user
+        request_type, date_from, date_to, reason, request_id, user
     )
     await _send_notification(
         blocks[0]['text']['text'],
@@ -91,12 +92,21 @@ async def _notify_admins(
 
 async def create_request(
         collection: AsyncIOMotorCollection,
-        date_from: date,
+        request_type: str,
+        date_from: Optional[date],
         date_to: Optional[date],
         reason: str,
 ) -> None:
     user = get_current_user_id()
     assert user is not None, 'Must be called from any Slack context'
+
+    if request_type not in VACATION_TYPES:
+        return await send_ephemeral(
+            f'Request type must be one of `{"` `".join(VACATION_TYPES)}`'
+        )
+
+    if date_from is None:
+        date_from = date.today()
 
     if date_to is None:
         date_to = date_from
@@ -111,16 +121,18 @@ async def create_request(
 
     request_id = await save_request(
         collection,
+        request_type,
         date_from,
         date_to,
         reason,
-        user
+        user,
     )
     await _send_notification(
         f'Leave request #`{request_id}` has been created! '
         f'You will be notified when your request is approved or denied.'
     )
     await _notify_admins(
+        request_type,
         date_from,
         date_to,
         reason,
@@ -141,11 +153,14 @@ async def open_request_view() -> None:
     )
 
 
-async def parse_request_view() -> Tuple[date, date, str]:
+async def parse_request_view() -> Tuple[str, date, date, str]:
     metadata = action_metadata.get()
     assert metadata and metadata.view, 'Must be called from view context'
 
     values = metadata.view['state']['values']
+    request_type = (
+        values['type'][VACATION_TYPE_ACTION_ID]['selected_option']['value']
+    )
     date_from = date.fromisoformat(
         values['start'][DATEPICKER_START_ACTION_ID]['selected_date']
     )
@@ -153,7 +168,7 @@ async def parse_request_view() -> Tuple[date, date, str]:
         values['end'][DATEPICKER_END_ACTION_ID]['selected_date']
     )
     reason = values['reason'][REASON_INPUT_ACTION_ID].get('value', '')
-    return date_from, date_to, reason
+    return request_type, date_from, date_to, reason
 
 
 async def process_request(

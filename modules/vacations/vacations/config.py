@@ -14,7 +14,7 @@ HISTORY_COLLECTION = config('HISTORY_COLLECTION', default='history')
 USERS_COLLECTION = config('USERS_COLLECTION', default='users')
 
 
-def _cast_vacation_types(vacation_types: str) -> Dict[str, Decimal128]:
+def _cast_leave_types(vacation_types: str) -> Dict[str, Decimal128]:
     result = {}
     for type_ in vacation_types.split(';'):
         key, value = type_.split(':') if ':' in type_ else (type_, '0')
@@ -22,10 +22,10 @@ def _cast_vacation_types(vacation_types: str) -> Dict[str, Decimal128]:
     return result
 
 
-VACATION_TYPES = config(
-    'VACATION_TYPES',  # type : days added per week (separated by semicolon)
-    cast=_cast_vacation_types,
-    default='vacation:0.47;day off:0.06;sick'
+LEAVE_TYPES = config(
+    'LEAVE_TYPES',  # type : days added per cronjob (separated by semicolon)
+    cast=_cast_leave_types,
+    default='vacation:0.1;sick:0.08;day-off:0.02'
 )
 
 REQUEST_VIEW_ID = config('REQUEST_VIEW_ID', default='vacations_request_view')

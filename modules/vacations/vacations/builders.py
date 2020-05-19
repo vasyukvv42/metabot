@@ -1,5 +1,6 @@
 from datetime import date
-from typing import List, Dict
+from decimal import Decimal
+from typing import List, Dict, Iterable, Optional
 
 from vacations.config import (
     APPROVE_BUTTON_ACTION_ID,
@@ -7,7 +8,9 @@ from vacations.config import (
     DATEPICKER_START_ACTION_ID,
     DATEPICKER_END_ACTION_ID,
     REASON_INPUT_ACTION_ID,
-    REQUEST_VIEW_ID, VACATION_TYPES, VACATION_TYPE_ACTION_ID
+    REQUEST_VIEW_ID,
+    LEAVE_TYPES,
+    VACATION_TYPE_ACTION_ID
 )
 
 STATUS_EMOJIS = {
@@ -22,9 +25,11 @@ DIVIDER = {
 
 
 def build_admin_request_notification(
-        request_type: str,
+        leave_type: str,
         date_from: date,
         date_to: date,
+        duration: int,
+        days_left: int,
         reason: str,
         request_id: str,
         user: str
@@ -34,30 +39,13 @@ def build_admin_request_notification(
             'type': 'section',
             'text': {
                 'type': 'mrkdwn',
-                'text': f'<!channel>\n<@{user}> has requested to go on a leave.'
+                'text': f'<!channel>\n<@{user}> has requested to go on a leave '
+                        f'for *{duration} days*.'
             }
         },
-        {
-            'type': 'section',
-            'fields': [
-                {
-                    'type': 'mrkdwn',
-                    'text': f'*Start:*\n{date_from.isoformat()}'
-                },
-                {
-                    'type': 'mrkdwn',
-                    'text': f'*End:*\n{date_to.isoformat()}'
-                },
-                {
-                    'type': 'mrkdwn',
-                    'text': f'*Type:*\n{request_type}'
-                },
-                {
-                    'type': 'mrkdwn',
-                    'text': f'*Reason:*\n{reason}'
-                }
-            ]
-        },
+        _build_request_info_block(
+            date_from, date_to, leave_type, reason, days_left
+        ),
         {
             'type': 'context',
             'elements': [
@@ -97,9 +85,9 @@ def build_admin_request_notification(
     ]
 
 
-def build_request_view() -> Dict:
+def build_request_view(days: Dict[str, Decimal]) -> Dict:
     today = date.today().isoformat()
-    blocks = [
+    blocks = build_days_blocks(days) + [
         {
             'type': 'input',
             'block_id': 'type',
@@ -119,7 +107,7 @@ def build_request_view() -> Dict:
                             'emoji': True
                         },
                         'value': type_
-                    } for type_ in VACATION_TYPES
+                    } for type_ in LEAVE_TYPES
                 ]
             },
             'label': {
@@ -215,17 +203,8 @@ def build_request_view() -> Dict:
     }
 
 
-def build_history_blocks(history: List[Dict], user_id: str) -> List[Dict]:
-    blocks: List[Dict] = [
-        {
-            'type': 'section',
-            'text': {
-                'type': 'mrkdwn',
-                'text': f'Leaves history for user <@{user_id}>:'
-            }
-        },
-        DIVIDER
-    ]
+def build_history_blocks(history: Iterable[Dict]) -> List[Dict]:
+    blocks: List[Dict] = [DIVIDER]
     for request in history:
         blocks += _build_request_blocks(request)
     return blocks
@@ -234,32 +213,11 @@ def build_history_blocks(history: List[Dict], user_id: str) -> List[Dict]:
 def _build_request_blocks(request: Dict) -> List[Dict]:
     date_from = request['date_from'].date()
     date_to = request['date_to'].date()
-    reason = request["reason"]
-    status = request['approval_status']
-    emoji = STATUS_EMOJIS.get(status, '')
+    leave_type = request['leave_type']
+    reason = request['reason']
     request_id = str(request['_id'])
     return [
-        {
-            'type': 'section',
-            'fields': [
-                {
-                    'type': 'mrkdwn',
-                    'text': f'*Start:*\n{date_from.isoformat()}'
-                },
-                {
-                    'type': 'mrkdwn',
-                    'text': f'*End:*\n{date_to.isoformat()}'
-                },
-                {
-                    'type': 'mrkdwn',
-                    'text': f'*Reason:*\n{reason}'
-                },
-                {
-                    'type': 'mrkdwn',
-                    'text': f'*Status:*\n{emoji} {status.capitalize()}'
-                },
-            ]
-        },
+        _build_request_info_block(date_from, date_to, leave_type, reason),
         {
             'type': 'context',
             'elements': [
@@ -270,4 +228,58 @@ def _build_request_blocks(request: Dict) -> List[Dict]:
             ]
         },
         DIVIDER
+    ]
+
+
+def _build_request_info_block(
+        date_from: date,
+        date_to: date,
+        leave_type: str,
+        reason: str,
+        days_left: Optional[int] = None,
+) -> Dict:
+    days_left_text = (
+        f'(*{days_left} days* left)' if days_left is not None else ''
+    )
+    return {
+        'type': 'section',
+        'fields': [
+            {
+                'type': 'mrkdwn',
+                'text': f'*Start:*\n{date_from.isoformat()}'
+            },
+            {
+                'type': 'mrkdwn',
+                'text': f'*End:*\n{date_to.isoformat()}'
+            },
+            {
+                'type': 'mrkdwn',
+                'text': f'*Type:*\n{leave_type.capitalize()} {days_left_text}'
+            },
+            {
+                'type': 'mrkdwn',
+                'text': f'*Reason:*\n{reason}'
+            },
+        ]
+    }
+
+
+def build_days_blocks(days: Dict[str, Decimal]) -> List[Dict]:
+    return [
+        {
+            'type': 'section',
+            'text': {
+                'type': 'mrkdwn',
+                'text': 'Days available:'
+            }
+        },
+        {
+            'type': 'section',
+            'fields': [
+                {
+                    'type': 'mrkdwn',
+                    'text': f'*{type_.capitalize()}:* {int(value)}'
+                } for type_, value in days.items()
+            ]
+        }
     ]

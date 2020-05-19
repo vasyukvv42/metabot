@@ -3,7 +3,7 @@ from contextvars import ContextVar
 from typing import Optional, TYPE_CHECKING, Dict
 
 from fastapi_metabot.client import SyncApis, AsyncApis
-from fastapi_metabot.client.models import SlackResponse, SlackRequest
+from fastapi_metabot.client.models import SlackRequest
 
 if TYPE_CHECKING:
     from fastapi_metabot.models import CommandMetadata, ActionMetadata  # noqa

@@ -1,5 +1,6 @@
 import logging
 from datetime import date
+from decimal import Decimal
 from typing import Dict, Optional, List, Tuple
 
 from motor.motor_asyncio import AsyncIOMotorCollection  # noqa
@@ -15,19 +16,20 @@ from vacations.builders import (
     build_admin_request_notification,
     build_request_view,
     build_history_blocks,
-    STATUS_EMOJIS
+    STATUS_EMOJIS, build_days_blocks
 )
 from vacations.config import (
     DATEPICKER_START_ACTION_ID,
     DATEPICKER_END_ACTION_ID,
     REASON_INPUT_ACTION_ID,
-    ADMIN_CHANNEL, VACATION_TYPES, VACATION_TYPE_ACTION_ID
+    ADMIN_CHANNEL, LEAVE_TYPES, VACATION_TYPE_ACTION_ID
 )
 from vacations.db import (
     save_request,
     update_request_status,
     get_request_by_id,
-    get_request_history_by_user_id
+    get_leaves_history_by_user_id, get_days_by_user_id, increase_days_by_user,
+    increase_days
 )
 
 log = logging.getLogger(__name__)
@@ -72,16 +74,26 @@ async def _send_notification(
 
 
 async def _notify_admins(
-        request_type: str,
+        leave_type: str,
         date_from: date,
         date_to: date,
+        duration: int,
+        days_left: int,
         reason: str,
         request_id: str
 ) -> None:
     user = get_current_user_id()
     assert user is not None, 'Must be called from any Slack context'
+
     blocks = build_admin_request_notification(
-        request_type, date_from, date_to, reason, request_id, user
+        leave_type,
+        date_from,
+        date_to,
+        duration,
+        days_left,
+        reason,
+        request_id,
+        user
     )
     await _send_notification(
         blocks[0]['text']['text'],
@@ -91,8 +103,9 @@ async def _notify_admins(
 
 
 async def create_request(
-        collection: AsyncIOMotorCollection,
-        request_type: str,
+        history: AsyncIOMotorCollection,
+        users: AsyncIOMotorCollection,
+        leave_type: str,
         date_from: Optional[date],
         date_to: Optional[date],
         reason: str,
@@ -100,9 +113,9 @@ async def create_request(
     user = get_current_user_id()
     assert user is not None, 'Must be called from any Slack context'
 
-    if request_type not in VACATION_TYPES:
+    if leave_type not in LEAVE_TYPES:
         return await send_ephemeral(
-            f'Request type must be one of `{"` `".join(VACATION_TYPES)}`'
+            f'Leave type must be one of `{"` `".join(LEAVE_TYPES)}`'
         )
 
     if date_from is None:
@@ -119,11 +132,14 @@ async def create_request(
             'Start date of your leave must be today or in the future.'
         )
 
+    duration = (date_to - date_from).days + 1
+    days = await get_days_by_user_id(users, user)
     request_id = await save_request(
-        collection,
-        request_type,
+        history,
+        leave_type,
         date_from,
         date_to,
+        duration,
         reason,
         user,
     )
@@ -132,23 +148,27 @@ async def create_request(
         f'You will be notified when your request is approved or denied.'
     )
     await _notify_admins(
-        request_type,
+        leave_type,
         date_from,
         date_to,
+        duration,
+        int(days[leave_type]),
         reason,
         request_id
     )
 
 
-async def open_request_view() -> None:
+async def open_request_view(users: AsyncIOMotorCollection) -> None:
     metadata = command_metadata.get()
-    assert metadata is not None, 'Must be called from command context'
+    user = get_current_user_id()
+    assert metadata and user, 'Must be called from command context'
 
+    days = await get_days_by_user_id(users, user)
     await async_slack_request(
         method='views_open',
         payload={
             'trigger_id': metadata.trigger_id,
-            'view': build_request_view()
+            'view': build_request_view(days)
         }
     )
 
@@ -158,7 +178,7 @@ async def parse_request_view() -> Tuple[str, date, date, str]:
     assert metadata and metadata.view, 'Must be called from view context'
 
     values = metadata.view['state']['values']
-    request_type = (
+    leave_type = (
         values['type'][VACATION_TYPE_ACTION_ID]['selected_option']['value']
     )
     date_from = date.fromisoformat(
@@ -168,14 +188,36 @@ async def parse_request_view() -> Tuple[str, date, date, str]:
         values['end'][DATEPICKER_END_ACTION_ID]['selected_date']
     )
     reason = values['reason'][REASON_INPUT_ACTION_ID].get('value', '')
-    return request_type, date_from, date_to, reason
+    return leave_type, date_from, date_to, reason
 
 
-async def process_request(
+async def approve_request(
+        history: AsyncIOMotorCollection,
+        users: AsyncIOMotorCollection,
+        request_id: str
+) -> None:
+    request = await _process_request(history, request_id, 'approved')
+    if request:
+        await increase_days_by_user(
+            users,
+            request['leave_type'],
+            Decimal(-request['duration']),
+            request['user_id'],
+        )
+
+
+async def deny_request(
+        history: AsyncIOMotorCollection,
+        request_id: str
+) -> None:
+    await _process_request(history, request_id, 'denied')
+
+
+async def _process_request(
         collection: AsyncIOMotorCollection,
         request_id: str,
         status: str
-) -> None:
+) -> Optional[Dict]:
     user = get_current_user_id()
     assert user is not None, 'Must be called from any Slack context'
     assert status in ('approved', 'denied')
@@ -207,6 +249,7 @@ async def process_request(
         channel_id=ADMIN_CHANNEL,
         thread_ts=thread_ts
     )
+    return request
 
 
 async def get_request_id_from_button() -> str:
@@ -220,8 +263,9 @@ async def is_admin_channel() -> bool:
 
 
 async def send_history(
-        collection: AsyncIOMotorCollection,
-        user: Optional[str] = None
+        history: AsyncIOMotorCollection,
+        users: AsyncIOMotorCollection,
+        user: Optional[str] = None,
 ) -> None:
     current_user = get_current_user_id()
     assert current_user is not None, 'Must be called from any Slack context'
@@ -233,9 +277,30 @@ async def send_history(
             'This command is available only in the admin channel.'
         )
 
-    history = await get_request_history_by_user_id(collection, user)
-    blocks = build_history_blocks(history, user)
+    days = await get_days_by_user_id(users, user)
+    leaves = await get_leaves_history_by_user_id(history, user)
+    blocks = build_days_blocks(days) + build_history_blocks(leaves)
     await send_ephemeral(
         blocks[0]['text']['text'],
         blocks
+    )
+
+
+async def add_days(
+        users: AsyncIOMotorCollection,
+        leave_type: str,
+        days: Decimal,
+        user: Optional[str]
+) -> None:
+    if leave_type not in LEAVE_TYPES:
+        return await send_ephemeral(
+            f'Leave type must be one of `{"` `".join(LEAVE_TYPES)}`'
+        )
+
+    if user:
+        await increase_days_by_user(users, leave_type, days, user)
+    else:
+        await increase_days(users, leave_type, days)
+    await send_ephemeral(
+        f'Amount of available days was increased successfully!'
     )

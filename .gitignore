@@ -13,3 +13,4 @@ build
 dist
 *.egg-info
 k8s
+*.log

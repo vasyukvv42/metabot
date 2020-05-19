@@ -219,8 +219,9 @@ class Module:
             dependencies=[Depends(set_current_module)],
         )
 
-        app.add_event_handler('startup', self._start_heartbeat)
-        app.add_event_handler('shutdown', self._stop_heartbeat)
+        if self.heartbeat_delay:
+            app.add_event_handler('startup', self._start_heartbeat)
+            app.add_event_handler('shutdown', self._stop_heartbeat)
 
         return app
 

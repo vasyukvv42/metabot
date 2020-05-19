@@ -226,39 +226,43 @@ class Module:
         return app
 
     def _start_heartbeat(self) -> None:
-        module = models.Module(
-            name=self.name,
-            description=self.description,
-            url=self.module_url,
-            commands={command.name: models.Command(
-                name=command.name,
-                description=command.description,
-                arguments=[models.CommandArgument(
-                    name=arg.name,
-                    description=arg.description,
-                    is_optional=arg.is_optional,
-                ) for arg in command.arguments],
-            ) for command in self._commands.values()},
-            actions=(
-                [f'block_actions:{action}' for action in self._actions]
-                + [f'view_submission:{view}' for view in self._views]
-            )
-        )
-        async_api = AsyncApis(self.metabot_client)
+        module = self._build_module_payload()
+        metabot_api = AsyncApis(self.metabot_client).metabot_api
 
         async def heartbeat() -> None:
             while True:
                 try:
-                    await (
-                        async_api.metabot_api.
-                        register_module_api_modules_post(module)
-                    )
+                    await metabot_api.register_module_api_modules_post(module)
                 except ApiException:
                     log.exception('Heartbeat to metabot server has failed')
 
                 await asyncio.sleep(self.heartbeat_delay)
 
         self._heartbeat = asyncio.create_task(heartbeat())
+
+    def _build_module_payload(self) -> models.Module:
+        return models.Module(
+            name=self.name,
+            description=self.description,
+            url=self.module_url,
+            commands={
+                command.name: models.Command(
+                    name=command.name,
+                    description=command.description,
+                    arguments=[
+                        models.CommandArgument(
+                            name=arg.name,
+                            description=arg.description,
+                            is_optional=arg.is_optional,
+                        ) for arg in command.arguments
+                    ],
+                ) for command in self._commands.values()
+            },
+            actions=(
+                [f'block_actions:{action}' for action in self._actions]
+                + [f'view_submission:{view}' for view in self._views]
+            )
+        )
 
     def _stop_heartbeat(self) -> None:
         if self._heartbeat is not None:

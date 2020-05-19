@@ -5,6 +5,6 @@ WORKDIR /app
 ENV PYTHONPATH "${PYTHONPATH}:/app"
 ENV MYPYPATH "${MYPYPATH}:/app"
 
-COPY requirements-lint.txt .flake8 mypy.ini /app/
+COPY lint-requirements.txt .flake8 mypy.ini /app/
 RUN pip3 install --upgrade pip && \
     pip3 install -r requirements-lint.txt --no-deps --no-cache-dir

@@ -1,4 +1,4 @@
-name: Lint and type check all Python code
+name: lint & type-check
 
 on:
   push:

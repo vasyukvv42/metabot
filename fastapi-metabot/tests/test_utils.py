@@ -5,7 +5,7 @@ import pytest
 
 from fastapi_metabot.client.api.metabot_api import (
     SyncMetabotApi,
-    AsyncMetabotApi,
+    AsyncMetabotApi
 )
 from fastapi_metabot.client.models import SlackRequest
 from fastapi_metabot.module import Module

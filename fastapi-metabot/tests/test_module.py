@@ -1,7 +1,11 @@
+from asyncio import Task, sleep
 from typing import Any
+from unittest.mock import MagicMock, AsyncMock
 
 import pytest
+from fastapi.encoders import jsonable_encoder
 
+from fastapi_metabot.client.api.metabot_api import AsyncMetabotApi
 from fastapi_metabot.module import Module, Command
 
 
@@ -103,3 +107,145 @@ def test_parse_arguments() -> None:
     assert optional.type == int
     assert optional.name == 'arg2'
     assert optional.description is None
+
+
+@pytest.mark.asyncio
+async def test_execute_command(module: Module) -> None:
+    name = 'test'
+    mock = MagicMock(name='func')
+
+    @module.command(name)
+    def func(arg: str) -> None:
+        pass
+
+    module._commands[name].func = mock  # noqa
+    await module.execute_command(name, {'arg': 'test'})
+    mock.assert_called_once_with(arg='test')
+
+
+@pytest.mark.asyncio
+async def test_execute_command_async(module: Module) -> None:
+    name = 'test'
+    mock = AsyncMock(name='func')
+
+    @module.command(name)
+    async def func(arg: str) -> None:
+        pass
+
+    module._commands[name].func = mock  # noqa
+    await module.execute_command(name, {'arg': 'test'})
+    mock.assert_awaited_once_with(arg='test')
+
+
+@pytest.mark.asyncio
+async def test_execute_action(module: Module) -> None:
+    name = 'action'
+    mock = MagicMock(name='action')
+    module.action(name, function=mock)
+
+    await module.execute_action(f'block_actions:{name}')
+    mock.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_execute_action_async(module: Module) -> None:
+    name = 'action'
+    mock = AsyncMock(name='action')
+    module.action(name, function=mock)
+
+    await module.execute_action(f'block_actions:{name}')
+    mock.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_execute_view(module: Module) -> None:
+    name = 'view'
+    mock = MagicMock(name='view')
+    module.view(name, function=mock)
+
+    await module.execute_action(f'view_submission:{name}')
+    mock.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_execute_view_async(module: Module) -> None:
+    name = 'view'
+    mock = AsyncMock(name='view')
+    module.view(name, function=mock)
+
+    await module.execute_action(f'view_submission:{name}')
+    mock.assert_awaited_once()
+
+
+def test_build_module_payload(module: Module) -> None:
+    command_name = 'command'
+    description = 'description'
+    action_name = 'action'
+    view_name = 'view'
+
+    @module.command(
+        command_name,
+        description=description,
+        arg_descriptions={
+            'req': description
+        }
+    )
+    def command(req: str, opt: str = '') -> None:
+        pass
+
+    @module.action(action_name)
+    def action() -> None:
+        pass
+
+    @module.view(view_name)
+    def view() -> None:
+        pass
+
+    payload = jsonable_encoder(module._build_module_payload())  # noqa
+    assert payload == {
+        'name': module.name,
+        'description': module.description,
+        'url': module.module_url,
+        'commands': {
+            command_name: {
+                'name': command_name,
+                'description': description,
+                'arguments': [
+                    {
+                        'name': 'req',
+                        'is_optional': False,
+                        'description': description
+                    },
+                    {
+                        'name': 'opt',
+                        'is_optional': True,
+                        'description': None
+                    },
+                ]
+            }
+        },
+        'actions': [
+            f'block_actions:{action_name}',
+            f'view_submission:{view_name}',
+        ]
+    }
+
+
+@pytest.mark.asyncio
+async def test_hearbeat(module: Module, monkeypatch) -> None:
+    payload = module._build_module_payload()  # noqa
+    mock_api = AsyncMock(name='register_module_api_modules_post')
+
+    monkeypatch.setattr(
+        AsyncMetabotApi,
+        'register_module_api_modules_post',
+        mock_api
+    )
+
+    module._start_heartbeat()  # noqa
+    assert isinstance(module._heartbeat, Task)  # noqa
+    await sleep(0)
+    mock_api.assert_awaited_with(payload)
+
+    module._stop_heartbeat()  # noqa
+    assert module._heartbeat is None  # noqa

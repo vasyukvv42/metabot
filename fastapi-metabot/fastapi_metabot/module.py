@@ -267,3 +267,4 @@ class Module:
     def _stop_heartbeat(self) -> None:
         if self._heartbeat is not None:
             self._heartbeat.cancel()
+            self._heartbeat = None

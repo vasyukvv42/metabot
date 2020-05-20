@@ -83,7 +83,7 @@ def test_parse_arguments_fails() -> None:
         Module._parse_arguments(func_with_kwargs)  # noqa
 
     with pytest.raises(AssertionError):
-        def func_with_positional_only(a: Any, /, b: Any) -> None:
+        def func_with_positional_only(a: Any, /, b: Any) -> None:  # noqa E225
             pass
 
         Module._parse_arguments(func_with_positional_only)  # noqa

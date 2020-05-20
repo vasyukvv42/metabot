@@ -5,22 +5,17 @@ from pydantic import BaseModel, Field, validator, AnyHttpUrl
 SAMPLE_MODULE = {
     'name': 'help',
     'description': 'Help module',
-    'url': 'http://help-module:8000/api/commands',
+    'url': 'http://help-module:8000',
     'commands': {
-        '': {
-            'name': '',
+        'me': {
+            'name': 'me',
             'description': 'Get help',
             'arguments': [
                 {
-                    'name': 'module',
+                    'name': 'module_name',
                     'is_optional': True,
                     'description': 'Module name'
-                },
-                {
-                    'name': 'command',
-                    'is_optional': True,
-                    'description': 'Command name'
-                },
+                }
             ]
         }
     },

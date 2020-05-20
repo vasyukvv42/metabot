@@ -1,14 +1,14 @@
-name: fastapi_metabot package
+name: metabot server
 
 on:
   push:
     branches: [ master ]
     paths:
-      - "fastapi-metabot/**"
+      - "metabot/**"
   pull_request:
     branches: [ master ]
     paths:
-      - "fastapi-metabot/**"
+      - "metabot/**"
 
 jobs:
   test:
@@ -23,11 +23,11 @@ jobs:
         python-version: "3.8"
     - name: Install dependencies
       run: |
-        cd fastapi-metabot
+        cd metabot
         python -m pip install --upgrade pip
         pip install -r requirements.txt -r dev-requirements.txt
     - name: Test with pytest
       run: |
-        cd fastapi-metabot
+        cd metabot
         export PYTHONPATH="${PYTHONPATH}:$(pwd)"
         pytest

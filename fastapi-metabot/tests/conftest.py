@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 import pytest
 from fastapi import FastAPI
 from requests import Session
-from starlette.background import BackgroundTasks
+from fastapi import BackgroundTasks
 from starlette.testclient import TestClient
 
 from fastapi_metabot.models import ActionMetadata, CommandMetadata

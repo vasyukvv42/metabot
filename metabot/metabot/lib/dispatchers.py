@@ -2,7 +2,7 @@
 import asyncio
 import logging
 from shlex import split
-from typing import Dict, Tuple, List, Iterable, Any
+from typing import Dict, Tuple, List, Iterable, Any, Set
 
 from aiohttp import ClientSession, ClientError
 from fastapi import FastAPI
@@ -24,26 +24,26 @@ class ActionDispatcher:
         self.storage = app.state.storage
 
     async def dispatch(self, payload: Dict[str, Any]) -> None:
-        action_ids = []
+        action_ids = set()
 
         if actions := payload.get('actions'):
-            action_ids += [
+            action_ids |= {
                 f'{payload["type"]}:{action["action_id"]}'
                 for action in actions
-            ]
+            }
 
         if action_callback_id := payload.get('callback_id'):
-            action_ids.append(f'{payload["type"]}:{action_callback_id}')
+            action_ids.add(f'{payload["type"]}:{action_callback_id}')
 
         if view := payload.get('view'):
             if view_callback_id := view.get("callback_id"):
-                action_ids.append(f'{payload["type"]}:{view_callback_id}')
+                action_ids.add(f'{payload["type"]}:{view_callback_id}')
 
         await self._trigger_all_actions(action_ids, payload)
 
     async def _trigger_all_actions(
             self,
-            action_ids: List[str],
+            action_ids: Set[str],
             payload: Dict[str, Any],
     ) -> None:
         futures = []
@@ -82,8 +82,11 @@ class CommandDispatcher:
     async def dispatch(self, payload: Dict[str, str]) -> None:
         try:
             module, command, arguments = await self._parse_payload(payload)
-        except ValueError:
-            return
+        except ValueError as e:
+            return await self._error(
+                payload,
+                str(e)
+            )
 
         try:
             await self._trigger_command(module, command, arguments, payload)
@@ -104,8 +107,7 @@ class CommandDispatcher:
             formatted_modules = self._format_strings(
                 await self.storage.get_module_names()
             )
-            raise await self._error(
-                payload,
+            raise ValueError(
                 f'Usage: `{payload["command"]} [module] [command]`. '
                 f'Available modules: {formatted_modules}'
             )
@@ -119,8 +121,7 @@ class CommandDispatcher:
             formatted_modules = self._format_strings(
                 await self.storage.get_module_names()
             )
-            raise await self._error(
-                payload,
+            raise ValueError(
                 f'Module `{module_name}` does not exist. '
                 f'Available modules: {formatted_modules}'
             )
@@ -128,8 +129,7 @@ class CommandDispatcher:
         try:
             command = module.commands[command_name]
         except KeyError:
-            raise await self._error(
-                payload,
+            raise ValueError(
                 f'Usage: `{payload["command"]} {module_name} [command]`. '
                 f'Available commands: {self._format_strings(module.commands)}'
             )
@@ -137,8 +137,7 @@ class CommandDispatcher:
         required_arguments = [x for x in command.arguments if not x.is_optional]
         if len(arguments) < len(required_arguments):
             arg_names = (arg.name for arg in required_arguments)
-            raise await self._error(
-                payload,
+            raise ValueError(
                 f'Missing one or more required arguments for {command_name}. '
                 f'Required arguments: {self._format_strings(arg_names)}'
             )
@@ -163,7 +162,7 @@ class CommandDispatcher:
         async with self.session.post(url, json=payload) as resp:
             resp.raise_for_status()
 
-    async def _error(self, payload: Dict[str, str], message: str) -> Exception:
+    async def _error(self, payload: Dict[str, str], message: str) -> None:
         channel = payload['channel_id']
         user = payload['user_id']
         log.info(
@@ -175,7 +174,6 @@ class CommandDispatcher:
             user=user,
             text=message,
         )
-        return ValueError(message)
 
     @staticmethod
     def _format_strings(strings: Iterable[str]) -> str:

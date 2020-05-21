@@ -11,6 +11,35 @@ on:
       - "metabot/**"
 
 jobs:
+  lint:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Cache pip
+        uses: actions/cache@v1
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('lint-requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+            ${{ runner.os }}-
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r lint-requirements.txt
+      - name: Lint with flake8
+        run: |
+          flake8 metabot --count --show-source --statistics
+      - name: Type check with mypy
+        run: |
+          mypy metabot
+
   test:
 
     runs-on: ubuntu-latest

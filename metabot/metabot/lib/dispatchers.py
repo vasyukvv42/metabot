@@ -1,4 +1,3 @@
-# flake8: noqa
 import asyncio
 import logging
 from shlex import split
@@ -10,7 +9,6 @@ from slack import WebClient
 
 from metabot.lib.storage import Storage
 from metabot.models.module import Module, Command
-
 
 log = logging.getLogger(__name__)
 

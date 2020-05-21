@@ -1,5 +1,3 @@
-# flake8: noqa
-# TODO: remove noqa after pyflakes bug is fixed
 import asyncio
 import logging
 from asyncio import iscoroutinefunction, Task

@@ -81,7 +81,7 @@ def test_commands_route_empty_module_500(
         test_command_metadata: Dict,
         test_client: Session,
 ) -> None:
-    response = test_client.post(f'/fake/commands/test', json={
+    response = test_client.post('/fake/commands/test', json={
         'arguments': {},
         'metadata': test_command_metadata,
     })
@@ -92,7 +92,7 @@ def test_actions_route_empty_module_500(
         test_action_metadata: Dict,
         test_client: Session,
 ) -> None:
-    response = test_client.post(f'/fake/actions/test', json={
+    response = test_client.post('/fake/actions/test', json={
         'metadata': test_action_metadata,
     })
     assert response.status_code == 500

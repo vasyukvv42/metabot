@@ -1,4 +1,3 @@
-# flake8: noqa
 from contextvars import ContextVar
 from typing import Optional, TYPE_CHECKING, Dict
 

@@ -1,4 +1,3 @@
-# flake8: noqa E501
 from asyncio import get_event_loop
 from typing import TYPE_CHECKING, Awaitable
 

@@ -302,5 +302,5 @@ async def add_days(
     else:
         await increase_days(users, leave_type, days)
     await send_ephemeral(
-        f'Amount of available days was increased successfully!'
+        'Amount of available days was increased successfully!'
     )

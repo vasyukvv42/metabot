@@ -1,14 +1,14 @@
-name: metabot
+name: modules/feedback
 
 on:
   push:
     branches: [ master ]
     paths:
-      - "metabot/**"
+      - "modules/feedback/**"
   pull_request:
     branches: [ master ]
     paths:
-      - "metabot/**"
+      - "modules/feedback/**"
 
 jobs:
   lint:
@@ -35,10 +35,10 @@ jobs:
           pip install -r lint-requirements.txt
       - name: Lint with flake8
         run: |
-          flake8 metabot --count --show-source --statistics
+          flake8 modules/feedback --count --show-source --statistics
       - name: Type check with mypy
         run: |
-          mypy metabot
+          mypy modules/feedback
 
   test:
 
@@ -52,11 +52,11 @@ jobs:
         python-version: "3.8"
     - name: Install dependencies
       run: |
-        cd metabot
+        cd modules/feedback
         python -m pip install --upgrade pip
         pip install -r requirements.txt -r dev-requirements.txt
     - name: Test with pytest
       run: |
-        cd metabot
+        cd modules/feedback
         export PYTHONPATH="${PYTHONPATH}:$(pwd)"
         pytest

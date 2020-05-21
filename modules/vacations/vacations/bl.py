@@ -22,13 +22,17 @@ from vacations.config import (
     DATEPICKER_START_ACTION_ID,
     DATEPICKER_END_ACTION_ID,
     REASON_INPUT_ACTION_ID,
-    ADMIN_CHANNEL, LEAVE_TYPES, VACATION_TYPE_ACTION_ID
+    ADMIN_CHANNEL,
+    LEAVE_TYPES,
+    VACATION_TYPE_ACTION_ID
 )
 from vacations.db import (
     save_request,
     update_request_status,
     get_request_by_id,
-    get_leaves_history_by_user_id, get_days_by_user_id, increase_days_by_user,
+    get_leaves_history_by_user_id,
+    get_days_by_user_id,
+    increase_days_by_user,
     increase_days
 )
 

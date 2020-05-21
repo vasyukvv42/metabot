@@ -1,14 +1,14 @@
-name: metabot
+name: modules/vacations
 
 on:
   push:
     branches: [ master ]
     paths:
-      - "metabot/**"
+      - "modules/vacations/**"
   pull_request:
     branches: [ master ]
     paths:
-      - "metabot/**"
+      - "modules/vacations/**"
 
 jobs:
   lint:
@@ -35,10 +35,10 @@ jobs:
           pip install -r lint-requirements.txt
       - name: Lint with flake8
         run: |
-          flake8 metabot --count --show-source --statistics
+          flake8 modules/vacations --count --show-source --statistics
       - name: Type check with mypy
         run: |
-          mypy metabot
+          mypy modules/vacations
 
   test:
 
@@ -52,11 +52,11 @@ jobs:
         python-version: "3.8"
     - name: Install dependencies
       run: |
-        cd metabot
+        cd modules/vacations
         python -m pip install --upgrade pip
         pip install -r requirements.txt -r dev-requirements.txt
     - name: Test with pytest
       run: |
-        cd metabot
+        cd modules/vacations
         export PYTHONPATH="${PYTHONPATH}:$(pwd)"
         pytest

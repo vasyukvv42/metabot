@@ -8,10 +8,11 @@ config = Config('.env')
 MODULE_URL = config('MODULE_URL')
 METABOT_URL = config('METABOT_URL')
 ADMIN_CHANNEL = config('ADMIN_CHANNEL')
-ANNOUNCE_CHANNEL = config('ANNOUNCE_CHANNEL')
 MONGODB_URI = config('MONGODB_URI')
+ANNOUNCE_CHANNEL = config('ANNOUNCE_CHANNEL', default='#announcements')
 HISTORY_COLLECTION = config('HISTORY_COLLECTION', default='history')
 USERS_COLLECTION = config('USERS_COLLECTION', default='users')
+HEARTBEAT_DELAY = config('HEARTBEAT_DELAY', cast=float, default='10')
 
 
 def _cast_leave_types(vacation_types: str) -> Dict[str, Decimal128]:

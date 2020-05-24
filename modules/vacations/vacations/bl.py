@@ -177,7 +177,7 @@ async def open_request_view(users: AsyncIOMotorCollection) -> None:
     )
 
 
-async def parse_request_view() -> Tuple[str, date, date, str]:
+def parse_request_view() -> Tuple[str, date, date, str]:
     metadata = action_metadata.get()
     assert metadata and metadata.view, 'Must be called from view context'
 

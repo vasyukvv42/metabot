@@ -2,7 +2,12 @@ import logging
 
 from fastapi import FastAPI
 
-from help.config import MODULE_URL, METABOT_URL, COMMANDS_BUTTON_ACTION_ID
+from help.config import (
+    MODULE_URL,
+    METABOT_URL,
+    COMMANDS_BUTTON_ACTION_ID,
+    HEARTBEAT_DELAY
+)
 from fastapi_metabot.module import Module
 from help.bl import get_module_name_from_button, send_help
 
@@ -14,6 +19,7 @@ module = Module(
     description=':sos: Get info about installed MetaBot modules and commands',
     module_url=MODULE_URL,
     metabot_url=METABOT_URL,
+    heartbeat_delay=HEARTBEAT_DELAY,
 )
 
 

@@ -8,7 +8,8 @@ from feedback.config import (
     CREATION_VIEW_ID,
     NOTIFY_ACTION_ID,
     ANSWER_VIEW_ID,
-    ANSWER_ACTION_ID
+    ANSWER_ACTION_ID,
+    HEARTBEAT_DELAY
 )
 from feedback.event_handlers import start_app_handler, stop_app_handler
 from feedback.bl import (
@@ -32,6 +33,7 @@ module = Module(
     description=':ledger: Create questionnaires and collect feedback',
     module_url=MODULE_URL,
     metabot_url=METABOT_URL,
+    heartbeat_delay=HEARTBEAT_DELAY
 )
 
 

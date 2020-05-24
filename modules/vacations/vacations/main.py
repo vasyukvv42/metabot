@@ -11,7 +11,8 @@ from vacations.config import (
     REQUEST_VIEW_ID,
     APPROVE_BUTTON_ACTION_ID,
     DENY_BUTTON_ACTION_ID,
-    LEAVE_TYPES
+    LEAVE_TYPES,
+    HEARTBEAT_DELAY
 )
 from vacations.event_handlers import start_app_handler, stop_app_handler
 from vacations.bl import (
@@ -36,6 +37,7 @@ module = Module(
     description=':palm_tree: Manage vacations, days off & other leaves',
     module_url=MODULE_URL,
     metabot_url=METABOT_URL,
+    heartbeat_delay=HEARTBEAT_DELAY
 )
 
 
@@ -181,7 +183,7 @@ async def add(leave_type: str, days: Decimal, user: UserId = None) -> None:
 
 @module.view(REQUEST_VIEW_ID)
 async def request_view() -> None:
-    leave_type, date_from, date_to, reason = await parse_request_view()
+    leave_type, date_from, date_to, reason = parse_request_view()
     await create_request(
         app.state.history,
         app.state.users,

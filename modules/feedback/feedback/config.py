@@ -8,6 +8,7 @@ MODULE_URL = config('MODULE_URL')
 METABOT_URL = config('METABOT_URL')
 MONGODB_URI = config('MONGODB_URI')
 FEEDBACK_COLLECTION = config('FEEDBACK_COLLECTION', default='feedback')
+HEARTBEAT_DELAY = config('HEARTBEAT_DELAY', cast=float, default='10')
 
 CREATION_VIEW_ID = config('CREATION_VIEW_ID', default='feedback_creation_view')
 ANSWER_VIEW_ID = config('ANSWER_VIEW_ID', default='feedback_answer_view')

@@ -69,6 +69,8 @@ module.install(app)
 **Step 3:** `uvicorn example:app --reload`
 
 ## How it works
+![architecture](https://user-images.githubusercontent.com/22105178/82678326-157d3580-9c52-11ea-896a-c678accf229d.png)
+
 Metabot and its modules communicate via HTTP APIs:
 
 * Metabot listens to Slack `/meta` slash command and actions (e.g. buttons, 

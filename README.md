@@ -1,4 +1,11 @@
 # Metabot for Slack
+![metabot server](https://github.com/vasyukvv42/metabot/workflows/metabot%20server/badge.svg)
+![fastapi_metabot package](https://github.com/vasyukvv42/metabot/workflows/fastapi_metabot%20package/badge.svg)
+
+![modules/vacations](https://github.com/vasyukvv42/metabot/workflows/modules/vacations/badge.svg)
+![modules/help](https://github.com/vasyukvv42/metabot/workflows/modules/help/badge.svg)
+![modules/feedback](https://github.com/vasyukvv42/metabot/workflows/modules/feedback/badge.svg)
+
 Metabot is a Slack bot written using FastAPI which allows you to dynamically 
 add new functionality (commands, interactive components & modals) via modules.
 

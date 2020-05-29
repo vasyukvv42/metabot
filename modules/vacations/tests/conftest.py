@@ -8,6 +8,7 @@ from fastapi_metabot.models import CommandMetadata, ActionMetadata
 from fastapi_metabot.module import Module
 from fastapi_metabot.utils import command_metadata, action_metadata
 
+environ._has_been_read = set()
 environ['HEARTBEAT_DELAY'] = '0'
 environ['METABOT_URL'] = 'http://localhost'
 environ['MODULE_URL'] = 'http://localhost'

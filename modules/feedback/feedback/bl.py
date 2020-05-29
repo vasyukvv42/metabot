@@ -90,7 +90,7 @@ async def open_answer_view(
     )
 
 
-async def parse_creation_view() -> Tuple[str, List[str], List[str]]:
+def parse_creation_view() -> Tuple[str, List[str], List[str]]:
     metadata = action_metadata.get()
     assert metadata and metadata.view, 'Must be called from view context'
 
@@ -111,7 +111,7 @@ async def parse_creation_view() -> Tuple[str, List[str], List[str]]:
     return title, recipients, questions
 
 
-async def parse_answer_view() -> Tuple[str, List[str]]:
+def parse_answer_view() -> Tuple[str, List[str]]:
     metadata = action_metadata.get()
     assert metadata and metadata.view, 'Must be called from view context'
 

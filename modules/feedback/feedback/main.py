@@ -57,7 +57,7 @@ async def create(num_of_questions: int = 1) -> None:
 
 @module.view(CREATION_VIEW_ID)
 async def creation_view() -> None:
-    title, recipients, questions = await parse_creation_view()
+    title, recipients, questions = parse_creation_view()
     await create_questionnaire(
         app.state.feedback,
         title,
@@ -68,7 +68,7 @@ async def creation_view() -> None:
 
 @module.view(ANSWER_VIEW_ID)
 async def answer_view() -> None:
-    q_id, answers = await parse_answer_view()
+    q_id, answers = parse_answer_view()
     await submit_answers(
         app.state.feedback,
         q_id,
